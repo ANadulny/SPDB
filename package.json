@@ -1,0 +1,28 @@
+{
+  "name": "SPDB",
+  "version": "1.0.0",
+  "description": "SPDB peojekt",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ANadulny/SPDB.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ANadulny/SPDB/issues"
+  },
+  "homepage": "https://github.com/ANadulny/SPDB#readme",
+  "dependencies": {
+    "isomorphic-unfetch": "^3.0.0",
+    "next": "^9.3.5",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  }
+}

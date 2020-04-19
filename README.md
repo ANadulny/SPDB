@@ -26,3 +26,14 @@ Oddanie projektu obejmuje:
 3. rozmowę dotyczącą uzyskanych wyników i wniosków.  
  
 Przed oddaniem projektu należy uzgodnić z prowadzącym dokładny termin oddania oraz przesłać odpowiednio wcześniej (absolutne minimum to jeden dzień roboczy przed oddaniem) dokumentację projektu. 
+
+
+### Run project
+
+Run server
+
+```
+npm run dev
+```
+
+go to http://localhost:3000
