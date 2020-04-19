@@ -30,10 +30,19 @@ Przed oddaniem projektu należy uzgodnić z prowadzącym dokładny termin oddani
 
 ### Run project
 
-Run server
+Najepier wykonaj:
+```
+npm install
+```
+
+Następnie żeby wystartować serwer skorzystaj ze skryptu start
 
 ```
-npm run dev
+npm run strat
 ```
 
 go to http://localhost:3000
+
+### Rekomendowane środowisko
+
+Visual Studio Code
