@@ -1,8 +1,9 @@
 import React from "react";
 import { Map, Marker, Popup, TileLayer } from "react-leaflet";
 import { Icon } from "leaflet";
-//import * as parkData from "./data/skateboard-parks.json";
+import L from 'leaflet'
 import "./App.css";
+import AutosizeInput from 'react-input-autosize'
 var overpass = require("query-overpass")
 
 export const icon = new Icon({
@@ -17,7 +18,10 @@ class App extends React.Component {
       activeMapFeature: null,
       searchedPlace: "",
       mapData: null,
-      mapCenter: [0.0, 0.0]
+      query: "[out:json];node(57.7,11.9,57.8,12.0)[amenity=bar];out;",
+      mapCenter: [0.0, 0.0],
+      map: null,
+      geoJsonLayer: null
     };
     this.handleChange = this.handleChange.bind(this);
     this.searchPlace = this.searchPlace.bind(this);
@@ -33,43 +37,85 @@ class App extends React.Component {
     });
   }
 
+  onEachFeature(feature, layer) {
+    // does this feature have a property named popupContent?
+    if (feature.properties && feature.properties.popupContent) {
+        layer.bindPopup(feature.properties.popupContent);
+    }else if(feature.properties && feature.properties.tags.name){
+      layer.bindPopup(feature.properties.tags.name);
+    }
+}
+
   callback(error, data){
     if(error){
       alert("error: " + error);
     }
     else{
-      //alert("data: " + JSON.stringify(data));
+      var geoJsonLayer = L.geoJSON(data, {onEachFeature: this.onEachFeature});
       
+      this.state.geoJsonLayer.clearLayers();
+      geoJsonLayer.addTo(this.state.map);
       this.setState({
-        mapData: data
+        mapData: data,
+        //result: JSON.stringify(data),
+        geoJsonLayer: geoJsonLayer
       });
     }
   }
 
   searchPlace(event){
-    overpass("[out:json];node(57.7,11.9,57.8,12.0)[amenity=bar];out;", this.callback);
+    overpass(this.state.query, this.callback);
     //query_overpass("node(51.249,7.148,51.251,7.152)[amenity=post_box];out;");
   }
 
+  componentDidMount(){
+    var map = L.map('map').setView([39.74739, -105], 3);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+			id: 'mapbox/light-v9'
+    }).addTo(map);
+    var geoJsonLayer = L.geoJSON();
+    geoJsonLayer.addTo(map)
+
+    this.setState({
+      map: map,
+      geoJsonLayer: geoJsonLayer
+    })
+    
+    //url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    //attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+  }
+
   render(){
+
     return (
       <div>
         <div>
           <input type="textbox" onChange={this.handleChange} name="searchedPlace"></input>
-          <button onClick = {this.searchPlace}>Search!</button>
         </div>
+        <div>
           <label>Searched Place: </label>
           <label>{this.state.searchedPlace}</label>
+        </div>
+        <div>
+          <AutosizeInput onChange={this.handleChange} name="query" value={this.state.query}/>
+          <button onClick = {this.searchPlace}>Search!</button>
+        </div>
         <div>
           <label>Active Feature: </label>
           <label>{JSON.stringify(this.state.activeMapFeature)}</label>
         </div>
-        <Map center={this.state.mapCenter} zoom={4}>
+        <div class = "container">
+          <div id="map"></div>
+        </div>
+        {/*<Map center={this.state.mapCenter} zoom={4}>
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           />
           
+
           {this.state.mapData && this.state.mapData.features.map(mapFeature => (
             <Marker
               key={mapFeature.properties.PARK_ID}
@@ -100,7 +146,7 @@ class App extends React.Component {
               </div>
             </Popup>
           )}
-        </Map>
+        </Map>*/}
       </div>
     );
   }
