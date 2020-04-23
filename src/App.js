@@ -42,7 +42,7 @@ class App extends React.Component {
     if (feature.properties && feature.properties.popupContent) {
         layer.bindPopup(feature.properties.popupContent);
     }else if(feature.properties && feature.properties.tags.name){
-      layer.bindPopup(feature.properties.tags.name);
+      	layer.bindPopup(feature.properties.tags.name);
     }
 }
 
@@ -65,7 +65,6 @@ class App extends React.Component {
 
   searchPlace(event){
     overpass(this.state.query, this.callback);
-    //query_overpass("node(51.249,7.148,51.251,7.152)[amenity=post_box];out;");
   }
 
   componentDidMount(){
