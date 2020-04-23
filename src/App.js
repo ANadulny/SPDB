@@ -108,44 +108,6 @@ class App extends React.Component {
         <div class = "container">
           <div id="map"></div>
         </div>
-        {/*<Map center={this.state.mapCenter} zoom={4}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-          />
-          
-
-          {this.state.mapData && this.state.mapData.features.map(mapFeature => (
-            <Marker
-              key={mapFeature.properties.PARK_ID}
-              position={[
-                mapFeature.geometry.coordinates[1],
-                mapFeature.geometry.coordinates[0]
-              ]}
-              onClick={() => {
-                this.setState({ activeMapFeature: mapFeature});
-              }}
-              icon={icon}
-            />
-          ))}
-  
-          {this.state.activeMapFeature && (
-            <Popup
-              position={[
-                this.state.activeMapFeature.geometry.coordinates[1],
-                this.state.activeMapFeature.geometry.coordinates[0]
-              ]}
-              onClose={() => {
-                this.setState({ activeMapFeature: null});
-              }}
-            >
-              <div>
-                <h2>{this.state.activeMapFeature.properties.tags.name}</h2>
-                <p>{this.state.activeMapFeature.properties.tags.opening_hours}</p>
-              </div>
-            </Popup>
-          )}
-        </Map>*/}
       </div>
     );
   }
