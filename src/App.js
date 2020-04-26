@@ -1,15 +1,8 @@
 import React from "react";
-import { Map, Marker, Popup, TileLayer } from "react-leaflet";
-import { Icon } from "leaflet";
 import L from 'leaflet'
 import "./App.css";
 import AutosizeInput from 'react-input-autosize'
 var overpass = require("query-overpass")
-
-export const icon = new Icon({
-  iconUrl: "/skateboarding.svg",
-  iconSize: [25, 25]
-});
 
 class App extends React.Component {
   constructor(props){
