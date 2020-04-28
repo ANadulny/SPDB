@@ -1,8 +1,11 @@
 import React from "react";
-import L from 'leaflet'
+import L from 'leaflet';
 import "./App.css";
 import AutosizeInput from 'react-input-autosize'
 var overpass = require("query-overpass")
+
+require('leaflet-routing-machine'); // Adds L.Routing onto L
+require('lrm-graphhopper'); // Adds L.Routing.GraphHopper onto L.Routing
 
 class App extends React.Component {
   constructor(props){
@@ -37,7 +40,7 @@ class App extends React.Component {
     }else if(feature.properties && feature.properties.tags.name){
       	layer.bindPopup(feature.properties.tags.name);
     }
-}
+  }
 
   callback(error, data){
     if(error){
@@ -62,11 +65,25 @@ class App extends React.Component {
 
   componentDidMount(){
     var map = L.map('map').setView([39.74739, -105], 3);
+
+    // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}{r}.png', {
+    //   attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    // }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 18,
 			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
 			id: 'mapbox/light-v9'
     }).addTo(map);
+  
+    L.Routing.control({
+        waypoints: [
+            L.latLng(57.74, 11.94),
+            L.latLng(57.6792, 11.949)
+        ],
+        routeWhileDragging: true,
+        router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
+    }).addTo(map);
+
     var geoJsonLayer = L.geoJSON();
     geoJsonLayer.addTo(map)
 
@@ -74,9 +91,6 @@ class App extends React.Component {
       map: map,
       geoJsonLayer: geoJsonLayer
     })
-    
-    //url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-    //attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }
 
   render(){
@@ -90,12 +104,14 @@ class App extends React.Component {
           <label>Searched Place: </label>
           <label>{this.state.searchedPlace}</label>
         </div>
+        <br />
         <div>
           <AutosizeInput onChange={this.handleChange} name="query" value={this.state.query}/>
-          <button onClick = {this.searchPlace}>Search!</button>
+          <button onClick = {this.searchPlace}>Search</button>
         </div>
         <div>
           <label>Active Feature: </label>
+          <br />
           <label>{JSON.stringify(this.state.activeMapFeature)}</label>
         </div>
         <div class = "container">
