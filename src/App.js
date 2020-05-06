@@ -66,23 +66,24 @@ class App extends React.Component {
   componentDidMount(){
     var map = L.map('map').setView([39.74739, -105], 3);
 
-    // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}{r}.png', {
-    //   attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-    // }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 18,
 			attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
 			id: 'mapbox/light-v9'
     }).addTo(map);
-  
+
     L.Routing.control({
         waypoints: [
             L.latLng(57.74, 11.94),
             L.latLng(57.6792, 11.949)
         ],
         routeWhileDragging: true,
+        // show: true,
         router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
     }).addTo(map);
+
+    // L.Routing.itinerary(
+    // );
 
     var geoJsonLayer = L.geoJSON();
     geoJsonLayer.addTo(map)
