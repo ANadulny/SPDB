@@ -17,7 +17,10 @@ class App extends React.Component {
       query: "[out:json];node(57.7,11.9,57.8,12.0)[amenity=bar];out;",
       mapCenter: [0.0, 0.0],
       map: null,
-      geoJsonLayer: null
+      geoJsonLayer: null,
+      
+      time: '',
+      length: ''
     };
     this.handleChange = this.handleChange.bind(this);
     this.searchPlace = this.searchPlace.bind(this);
@@ -64,7 +67,7 @@ class App extends React.Component {
   }
 
   componentDidMount(){
-    var map = L.map('map').setView([39.74739, -105], 3);
+    var map = L.map('map').setView([20., -105], 3);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 18,
@@ -72,18 +75,63 @@ class App extends React.Component {
 			id: 'mapbox/light-v9'
     }).addTo(map);
 
-    L.Routing.control({
-        waypoints: [
-            L.latLng(57.74, 11.94),
-            L.latLng(57.6792, 11.949)
-        ],
+    var wayPoint1 = L.latLng(57.74, 11.94);
+    var wayPoint2 = L.latLng(57.6792, 11.949);
+
+    let rWP1 = new L.Routing.Waypoint();
+    rWP1.latLng = wayPoint1;    
+
+    let rWP2 = new L.Routing.Waypoint();
+    rWP2.latLng = wayPoint2;
+
+
+    function createButton(label, container) {
+      var btn = L.DomUtil.create('button', '', container);
+      btn.setAttribute('type', 'button');
+      btn.innerHTML = label;
+      return btn;
+    }
+  
+    map.on('click', function(e) {
+        var container = L.DomUtil.create('div'),
+            startBtn = createButton('Start from this location', container),
+            destBtn = createButton('Go to this location', container);
+    
+        L.popup()
+            .setContent(container)
+            .setLatLng(e.latlng)
+            .openOn(map);
+    });
+    // http://www.liedman.net/leaflet-routing-machine/tutorials/interaction/
+
+    var control = L.Routing.control({
+        lineOptions:{
+          styles: [{color: 'red', opacity: 1, weight: 5}],
+          addWaypoints: false
+        },
         routeWhileDragging: true,
-        // show: true,
+        plan: L.Routing.plan([wayPoint1,wayPoint2], {
+          createMarker: function(i, wp) {
+            return L.marker(wp.latLng, {
+              draggable: true
+            });
+          }
+        }),
+        // showAlternatives: true,
+        // addWaypoints: false, 
+        // draggableWaypoints: false, 
+        // routeWhileDragging: false, 
+        // show: false,
+        // collapsible: true,
         router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
     }).addTo(map);
 
-    // L.Routing.itinerary(
-    // );
+    let route = control.getRouter();
+    console.log(`control = ${JSON.stringify(route)}`)
+    console.log(`control = ${JSON.stringify(control.getPlan().getWaypoints())}`)
+    console.log(`time = ${control.route.time}`)
+
+    L.Routing.errorControl(control).addTo(map);
 
     var geoJsonLayer = L.geoJSON();
     geoJsonLayer.addTo(map)
@@ -95,7 +143,6 @@ class App extends React.Component {
   }
 
   render(){
-
     return (
       <div>
         <div>
@@ -104,6 +151,10 @@ class App extends React.Component {
         <div>
           <label>Searched Place: </label>
           <label>{this.state.searchedPlace}</label>
+          <br />
+          <label>Distance: '{this.state.length}'</label>
+          <br />
+          <label>Time: '{this.state.time}'</label>
         </div>
         <br />
         <div>
@@ -115,7 +166,7 @@ class App extends React.Component {
           <br />
           <label>{JSON.stringify(this.state.activeMapFeature)}</label>
         </div>
-        <div class = "container">
+        <div className = "container">
           <div id="map"></div>
         </div>
       </div>
