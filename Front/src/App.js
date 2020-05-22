@@ -20,7 +20,8 @@ class App extends React.Component {
       geoJsonLayer: null,
       
       time: '',
-      length: ''
+      length: '',
+      routeLength: null
     };
     this.handleChange = this.handleChange.bind(this);
     this.searchPlace = this.searchPlace.bind(this);
@@ -56,7 +57,7 @@ class App extends React.Component {
       geoJsonLayer.addTo(this.state.map);
       this.setState({
         mapData: data,
-        //result: JSON.stringify(data),
+        result: JSON.stringify(data),
         geoJsonLayer: geoJsonLayer
       });
     }
@@ -124,7 +125,10 @@ class App extends React.Component {
         // show: false,
         // collapsible: true,
         router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
-    }).addTo(map);
+    });
+
+    control.addTo(map);
+    
 
     let route = control.getRouter();
     console.log(`control = ${JSON.stringify(route)}`)
@@ -142,7 +146,14 @@ class App extends React.Component {
     })
   }
 
+
   render(){
+   /* var lengths = this.state.routeLength.map((elem) => 
+      <div>
+        <label>{elem}</label>
+    </div>
+    );*/
+
     return (
       <div>
         <div>
@@ -166,6 +177,12 @@ class App extends React.Component {
           <br />
           <label>{JSON.stringify(this.state.activeMapFeature)}</label>
         </div>
+        <div>
+          <label>Route length: </label>
+          <br />
+        </div>
+        {this.state.routeLength}
+        {this.state.result}
         <div className = "container">
           <div id="map"></div>
         </div>
