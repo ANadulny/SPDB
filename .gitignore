@@ -1,28 +1,60 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
-/.idea
-.pnp.js
+/Front/node_modules
+/Front/.pnp
+/Front/.idea
+/Front.pnp.js
 
 # testing
-/coverage
+/Front/coverage
 
 # production
-/build
+/Front/build
 
 # misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+/Front/.DS_Store
+/Front/.env.local
+/Front/.env.development.local
+/Front/.env.test.local
+/Front/.env.production.local
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+/Front/npm-debug.log*
+/Front/yarn-debug.log*
+/Front/yarn-error.log*
 
-/writing
+/Front/writing
 
-package-lock.json
+/Front/package-lock.json
+
+/Backend/target/
+/Backend/!.mvn/wrapper/maven-wrapper.jar
+/Backend/!**/src/main/**
+/Backend/!**/src/test/**
+
+### STS ###
+/Backend/.apt_generated
+/Backend/.classpath
+/Backend/.factorypath
+/Backend/.project
+/Backend/.settings
+/Backend/.springBeans
+/Backend/.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+/Backend/.idea
+/Backend/*.iws
+/Backend/*.iml
+/Backend/*.ipr
+
+### NetBeans ###
+/Backend/nbproject/private/
+/Backend/nbbuild/
+/Backend/dist/
+/Backend/nbdist/
+/Backend/.nb-gradle/
+/Backendbuild/
+
+### VS Code ###
+/Backend/.vscode/
