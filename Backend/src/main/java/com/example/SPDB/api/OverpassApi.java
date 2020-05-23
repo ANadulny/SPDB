@@ -33,9 +33,8 @@ public class OverpassApi {
         SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
 
         String query = prepareQuery(searchedObject, new Point(52.5464521,19.7008606));
-
+        //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
         String responseFromOverpass = this.readDataFromURL(apiUrl + query);
-        String fullQuery = apiUrl + query;
         if(responseFromOverpass == null){
             return null;
         }
@@ -45,6 +44,13 @@ public class OverpassApi {
         }catch(JSONException e) {
             return null;
         }
+        //Tutaj jest już obiekt
+
+        //Tutaj będzie graphhopper
+
+        //Tutaj będzie zawężanie do tych, które spełniają warunki z listy
+
+        //Tutaj będzie można już zwrócić odpowiedź
 
         return jsonObject.toString();
     }
