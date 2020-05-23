@@ -9,10 +9,10 @@ import java.util.List;
 @Setter
 public class SearchedObject{
     List<Tag> tags;
-    float distance;
-    int time; //seconds
+    double distance;
+    long time; //seconds
 
-    public SearchedObject(List<Tag> tags, float distance, int time) {
+    public SearchedObject(List<Tag> tags, double distance, long time) {
         this.tags = tags;
         this.distance = distance;
         this.time = time;

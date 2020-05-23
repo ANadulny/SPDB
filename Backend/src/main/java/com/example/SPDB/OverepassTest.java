@@ -106,14 +106,7 @@ public class OverepassTest {
             //System.out.println(str);
         }
 
-
-
-
-
-
         JSONObject json = new JSONObject(builder.toString());
-
-
         return builder.toString();
 
         //return myway.nodes.toString();

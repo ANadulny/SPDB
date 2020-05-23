@@ -9,12 +9,23 @@ import java.util.List;
 @Setter
 public class DataWrapper {
     Point startingPoint;
-    List<SearchedObject> searchedObjects;
-    int maxObjects;
+    SearchedObject searchedObject; //poszukiwane obiekty
+    List<SearchedObject> searchedObjects; //lista obiektów, które muszą albo mogą być wokół poszukiwanych obiektów
+    boolean isAnd; //true - koniunkcja false - alternatywa
+    double distance;
+    long time; //sekundy
+    double precision; //jaki procent ma być przepuszczany przez graphhoppera
+    VehicleType vehicleType;
 
-    public DataWrapper(Point startingPoint, List<SearchedObject> searchedObjects, int maxObjects) {
+
+    public DataWrapper(Point startingPoint, SearchedObject searchedObject, List<SearchedObject> searchedObjects, boolean isAnd, double distance, long time, double precision, VehicleType vehicleType) {
         this.startingPoint = startingPoint;
+        this.searchedObject = searchedObject;
         this.searchedObjects = searchedObjects;
-        this.maxObjects = maxObjects;
+        this.isAnd = isAnd;
+        this.distance = distance;
+        this.time = time;
+        this.precision = precision;
+        this.vehicleType = vehicleType;
     }
 }
