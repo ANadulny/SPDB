@@ -1,6 +1,5 @@
 package com.example.SPDB.api;
 
-import com.example.SPDB.data.DataWrapper;
 import com.example.SPDB.data.Point;
 import com.example.SPDB.data.SearchedObject;
 import com.example.SPDB.data.Tag;
@@ -21,11 +20,10 @@ import java.util.List;
 @RestController
 public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
-    String queryBody = "[out:json][timeout:25];(way[\"natural\"=\"water\"][\"water\"=\"lake\"](around:15000,52.5464521,19.7008606);relation[\"natural\"=\"water\"][\"water\"=\"lake\"](around:15000,52.5464521,19.7008606););";
-    String queryEnding = "out%20body;>;out;";
 
     @GetMapping("/api")
     String OverpassApi() throws IOException {
+        //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
         List<Tag> tags = new ArrayList() {{
             add(new Tag("natural", "water"));
             add(new Tag("water", "lake"));
