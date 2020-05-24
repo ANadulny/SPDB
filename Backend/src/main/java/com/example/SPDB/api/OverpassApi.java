@@ -3,9 +3,12 @@ package com.example.SPDB.api;
 import com.example.SPDB.data.Point;
 import com.example.SPDB.data.SearchedObject;
 import com.example.SPDB.data.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.BufferedReader;
@@ -16,10 +19,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-
+@Slf4j
 @RestController
 public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
+
+    @PostMapping("/data")
+    public String userData(@RequestParam String lat, @RequestParam String lng) throws JSONException {
+        log.info("lat = {}", lat);
+        log.info("lng = {}", lng);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("lat", lat);
+        jsonObject.put("lng", lng);
+        return jsonObject.toString();
+    }
 
     @GetMapping("/api")
     String OverpassApi() throws IOException {
