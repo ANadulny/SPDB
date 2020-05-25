@@ -142,7 +142,7 @@ class App extends React.Component {
     const value = target.value;
     const name = target.name;
     if(name === "radius"){
-      this.state.searchedObject.distance(Number(value));
+      this.state.searchedObject.distance = Number(value);
       this.state.startingPointRadius.setRadius(Number(value));
     }
     this.setState({
