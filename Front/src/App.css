@@ -11,3 +11,13 @@
   transition: margin-right 0.2s ease;
   display: none;
 }
+
+.searchedFeatures {
+  align-items: center;
+  align-self: center;
+  text-align: center;
+}
+
+.boldOption {
+  font-weight: bold;
+}

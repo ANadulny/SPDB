@@ -13,21 +13,23 @@ class App extends React.Component {
     this.state = {
       startingPoint: { lat: 0.0, lng: 0.0 },
       activeMapFeature: null,
-      searchedPlace: "",
       mapData: null,
       query: "",
-      map: null,
       startingPointMarker: new L.Marker([0,0]),
       geoJsonLayer: null,
       
       time: '',
       length: '',
-      routeLength: null
+      routeLength: null,
+      searchedFeatures: [new TagList()],
+      isAnd: false,
+      radius: 0
     };
     this.handleChange = this.handleChange.bind(this);
     this.searchPlace = this.searchPlace.bind(this);
     this.callback = this.callback.bind(this);
     this.handleStartingPointChange = this.handleStartingPointChange.bind(this);
+    this.handleFeatureTagSelect = this.handleFeatureTagSelect.bind(this);
   }
 
   onEachFeature(feature, layer) {
@@ -64,7 +66,6 @@ class App extends React.Component {
 
   componentDidMount(){
     var map = L.map('map').setView([52.2366, 21.0030], 12);
-    //var startingPointMarker = new L.Marker([0,0]);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 18,
@@ -164,7 +165,52 @@ class App extends React.Component {
     }
   }
 
+  handleFeatureTagSelect(event){
+    const target = event.target;
+    const value = target.value.split(",");
+    const name = target.name;
+    if(event.target.value === "ignore")
+      return;
+    
+    var featuresList = this.state.searchedFeatures[Number(value[0])];
+    console.log(this.state.searchedFeatures);
+    console.log(featuresList);
+    featuresList.elemList[value[0]] = value[2];
+    this.setState(state => {
+      const list = state.searchedFeatures.map((item, j) => {
+        if (Number(value[1]) === j) {
+          return featuresList
+        } else {
+          return item;
+        }
+      });
+      return {
+        list,
+      };
+    }, () => this.render());
+    alert("you've selected: " + event.target.value);
+  }
+
   render(){
+    var availableFeatures = new AvailableFeatures();
+    var searchedFeatures = <tr></tr>
+    var i = -1;
+    searchedFeatures = <div><table>
+      <tr>
+      <td><select onChange = {this.handleFeatureTagSelect}>
+        <option value="ignore">---Please select type---</option>
+        {Object.entries(availableFeatures.features).map(([key, value]) => {
+          i++;
+          return (<option value={[0, i, key]} class="boldOption">{key}</option>)
+      })}
+      </select></td>
+      <td><label>Distance: </label><input></input></td>
+      </tr>
+    </table>
+    <label>Koniunkcja? </label>
+    <input type="checkbox"></input>
+    </div>;
+
     return (
       <div>
         <div name = 'startingPointRow'>
@@ -173,10 +219,14 @@ class App extends React.Component {
           <input type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
           <label>longitude:</label>
           <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
+          <label>radius:</label>
+          <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
         </div>
-        {/* <div> */}
-          {/* <select type="selector"></input> */}
-        {/* </div> */}
+        <div class = "searchedFeatures">
+          <table align="center">
+          {searchedFeatures}
+          </table>
+        </div>
         <div>
           <button onClick={this.searchPlace}>Submit</button>
         </div>
@@ -191,6 +241,22 @@ class App extends React.Component {
     </div>
     );
   }
+}
+
+class AvailableFeatures{
+  features = {
+    "amenity": ["bicycle_parking", "bicycle_rental", "bus_station", "car_wash"],
+    "natural": [{
+      "water": ["lake, rivier, pond"]
+    }, "beach", "wood"],
+    "tourism": ["hotel", "guest_house", "camp_site"]
+  }
+}
+class TagList{
+  elemList = [null, null, null];
+  //0 - cat
+  //1 - subcat/tag
+  //2 - tag for subcat
 }
 
 export default App;
