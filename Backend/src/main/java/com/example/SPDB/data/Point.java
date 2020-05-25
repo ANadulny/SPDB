@@ -6,11 +6,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Point{
-    double longitude;
-    double latitude;
+    double lat;
+    double lng;
 
     public Point(double longitude, double latitude) {
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.lat = latitude;
+        this.lng = longitude;
     }
 }

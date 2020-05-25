@@ -24,8 +24,11 @@ class App extends React.Component {
       routeLength: null,
       searchedObject: new TagList(),
       searchedFeatures: [new TagList()],
-      isAnd: false,
-      radius: 0
+      isAnd: true,
+      radius: 0,
+      vehicle: "",
+      time: 0,
+      precision: 100.0
     };
     this.handleChange = this.handleChange.bind(this);
     this.searchPlace = this.searchPlace.bind(this);
@@ -64,10 +67,66 @@ class App extends React.Component {
     }
   }
 
+  createTagList(elemList){
+    var tagsToSend = [];
+    for(var i = 0; i<elemList.length-1; i++){
+      if(elemList[i+1] !== null)
+      tagsToSend.push({
+        category: elemList[i],
+        objectType: elemList[i+1]
+      })
+    }
+    return tagsToSend;
+  }
+
   searchPlace(event){
     //Do stuff
     alert("searching stuff!");
     console.log(this.state.searchedFeatures);
+    var tagsToSend = this.createTagList(this.state.searchedObject.elemList);
+
+    var searchedFeaturesToSend = [];
+    for(var i = 0; i<this.state.searchedFeatures.length; i++){
+      var tagsForFeature = this.createTagList(this.state.searchedFeatures[i].elemList);
+      searchedFeaturesToSend.push({
+        tags: tagsForFeature,
+        distance: this.state.radius,
+        time: this.state.time
+      });
+    }
+    
+
+    var dataToSend = {
+      startingPoint: this.state.startingPoint,
+      searchedObject: {
+        tags: tagsToSend,
+        distance: this.state.radius,
+        time: this.state.time
+      },
+      searchedObjects: searchedFeaturesToSend,
+      isAnd: this.state.isAnd,
+      distance: this.state.radius,
+      time: this.state.time,
+      precision: this.state.precision,
+      vehicleType: this.state.vehicle
+    }
+    console.log(JSON.stringify(dataToSend));
+    const url = "/api";
+    const jsonString = JSON.stringify(dataToSend);
+    var headers = {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    };  
+
+    fetch(url,{
+      method: "POST",
+      headers: headers,
+      body: jsonString
+    })
+    .then(res=>res.json())
+    .then(json => {
+      console.log(json)
+    });
     //overpass(this.state.query, this.callback);
   }
 
@@ -141,6 +200,13 @@ class App extends React.Component {
     const target = event.target;
     const value = target.value;
     const name = target.name;
+    if(target.type === "checkbox"){
+      if(this.state.isAnd)
+        this.setState({isAnd: false});
+      else
+        this.setState({isAnd: true});
+      return;
+    }
     if(name === "radius"){
       this.state.searchedObject.distance = Number(value);
       this.state.startingPointRadius.setRadius(Number(value));
@@ -154,7 +220,6 @@ class App extends React.Component {
     const target = event.target;
     const value = target.value;
     const name = target.name;
-    console.log(name + ' ' + value);
     if(this.state.startingPointMarker != null){
     if(name === 'lat'){
       this.setState({
@@ -162,7 +227,7 @@ class App extends React.Component {
       }, () => {
         if(this.state.startingPointMarker != null){
           this.state.startingPointMarker.setLatLng(this.state.startingPoint);
-          this.state.circle.setLatLng(this.state.startingPoint);
+          this.state.startingPointRadius.setLatLng(this.state.startingPoint);
       }});
     }else{
       this.setState({
@@ -224,7 +289,6 @@ class App extends React.Component {
   }
 
   renderAdditionalFields(rowIndex, columnIndex, key, fun){
-    console.log(key);
     if(key === null)
       return <td></td>;
     var toReturn; 
@@ -312,7 +376,6 @@ class App extends React.Component {
         searchedObject.elemList[i] = null;
       }
     }
-    console.log('tag: ' + searchedObject.elemList);
     this.setState({
       searchedObject: searchedObject
     }, () => this.render());
@@ -320,9 +383,19 @@ class App extends React.Component {
   }
 
   render(){
+    console.log(this.state.searchedFeatures);
     var availableFeatures = new AvailableFeatures();
     var rowIndex = -1;
     var searchedFeatures;
+    
+    var isAndBox;
+    if(this.state.isAnd){
+      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange}></input>;
+    }
+    else{
+      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange} checked></input>;
+    }
+
     searchedFeatures = <div><table>
       {this.state.searchedFeatures.map((elem) => {
         rowIndex++;
@@ -346,8 +419,8 @@ class App extends React.Component {
     </table>
     <button onClick = {this.addNewRowForSearchedFeature}>Add</button>
     <br></br>
-    <label>Koniunkcja? </label>
-    <input type="checkbox"></input>
+    <label>Alternative? </label>
+    {isAndBox}
     </div>;
 
     var searchedObject = <div>
@@ -378,6 +451,8 @@ class App extends React.Component {
           <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
           <label>radius:</label>
           <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
+          <label>precision:</label>
+          <input name="precision" value={this.state.precision} onChange={this.handleChange}></input>
         </div>
         <div class = "searchedFeatures">
           <table align="center">
@@ -391,19 +466,18 @@ class App extends React.Component {
         </div>
         <div>
           <label>Vehicle: </label>
-          <select>
+          <select name="vehicle" onChange={this.handleChange}>
+            <option value="">-Select Vehicle-</option>
             <option>Car</option>
             <option>Bike</option>
-            <option>Walk</option>
+            <option>Foot</option>
           </select>
+          <label>Time (s)</label>
+          <input onChange={this.handleChange} value={this.state.time} name="time"></input>
           <br></br>
           <button onClick={this.searchPlace}>Submit</button>
         </div>
       <br />
-      <div>
-        <AutosizeInput onChange={this.handleChange} name="query" value={this.state.query}/>
-        <button onClick = {this.searchPlace}>Search</button>
-      </div>
       <div className = "container">
         <div id="map"></div>
       </div>

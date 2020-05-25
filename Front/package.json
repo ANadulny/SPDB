@@ -39,5 +39,6 @@
   },
   "devDependencies": {
     "query-overpass": "^1.5.5"
-  }
+  },
+  "proxy": "http://localhost:8080"
 }
