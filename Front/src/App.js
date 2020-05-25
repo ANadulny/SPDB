@@ -92,6 +92,7 @@ class App extends React.Component {
            this.setState({
             startingPoint: { lat: e.latlng.lat, lng: e.latlng.lng }
            });
+           map.closePopup();
          }.bind(this);
         L.popup()
             .setContent(container)
