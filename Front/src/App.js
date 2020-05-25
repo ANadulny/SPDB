@@ -1,5 +1,5 @@
 import React from "react";
-import L from 'leaflet';
+import L, { marker } from 'leaflet';
 import "./App.css";
 import AutosizeInput from 'react-input-autosize'
 var overpass = require("query-overpass")
@@ -11,12 +11,13 @@ class App extends React.Component {
   constructor(props){
     super(props);
     this.state = {
-      startingPoint: { lat: '', lng: '' },
+      startingPoint: { lat: 0.0, lng: 0.0 },
       activeMapFeature: null,
       searchedPlace: "",
       mapData: null,
       query: "",
       map: null,
+      startingPointMarker: new L.Marker([0,0]),
       geoJsonLayer: null,
       
       time: '',
@@ -26,15 +27,7 @@ class App extends React.Component {
     this.handleChange = this.handleChange.bind(this);
     this.searchPlace = this.searchPlace.bind(this);
     this.callback = this.callback.bind(this);
-  }
-
-  handleChange(event){
-    const target = event.target;
-    const value = target.value;
-    const name = target.name;
-    this.setState({
-      [name]: value
-    });
+    this.handleStartingPointChange = this.handleStartingPointChange.bind(this);
   }
 
   onEachFeature(feature, layer) {
@@ -64,11 +57,14 @@ class App extends React.Component {
   }
 
   searchPlace(event){
-    overpass(this.state.query, this.callback);
+    //Do stuff
+    alert("searching stuff!");
+    //overpass(this.state.query, this.callback);
   }
 
   componentDidMount(){
     var map = L.map('map').setView([52.2366, 21.0030], 12);
+    //var startingPointMarker = new L.Marker([0,0]);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			maxZoom: 18,
@@ -84,20 +80,26 @@ class App extends React.Component {
     }
 
     let markerGroup = L.layerGroup().addTo(map);
+    this.state.startingPointMarker.addTo(markerGroup);
 
     map.on('click', function(e) {
         var container = L.DomUtil.create('div'),
             startBtn = createButton('Start from this location', container);
         startBtn.onclick = function () { 
            console.log("Setting new starting point");
-           markerGroup.clearLayers()
-           new L.Marker([e.latlng.lat, e.latlng.lng]).addTo(markerGroup);
-         };
+           console.log('lat: ' + e.latlng.lat + ' lng:' + e.latlng.lng);
+           markerGroup.clearLayers();
+           this.state.startingPointMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
+           this.state.startingPointMarker.addTo(markerGroup);
+           this.setState({
+            startingPoint: { lat: e.latlng.lat, lng: e.latlng.lng }
+           });
+         }.bind(this);
         L.popup()
             .setContent(container)
             .setLatLng(e.latlng)
             .openOn(map);
-    });
+    }.bind(this));
 
     var control = L.Routing.control({
         router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
@@ -128,34 +130,66 @@ class App extends React.Component {
     // document.getElementById("submit").disabled = false;
   }
 
+  handleChange(event){
+    const target = event.target;
+    const value = target.value;
+    const name = target.name;
+    this.setState({
+      [name]: value
+    });
+  }
+
+  handleStartingPointChange(event){
+    const target = event.target;
+    const value = target.value;
+    const name = target.name;
+    console.log(name + ' ' + value);
+    if(this.state.startingPointMarker != null){
+    if(name === 'lat'){
+      this.setState({
+        startingPoint: { lat: value, lng: this.state.startingPoint.lng }
+      }, () => {
+        if(this.state.startingPointMarker != null){
+          this.state.startingPointMarker.setLatLng(this.state.startingPoint);
+          console.log(this.state.startingPointMarker.getLatLng());
+      }});
+    }else{
+      this.setState({
+        startingPoint: { lat: this.state.startingPoint.lat, lng: value }
+      }, () => {
+        if(this.state.startingPointMarker != null){
+          this.state.startingPointMarker.setLatLng(this.state.startingPoint);
+          console.log(this.state.startingPointMarker.getLatLng());
+      }});
+    }
+    }
+  }
+
   render(){
     return (
       <div>
-        <form action="http://localhost:8080/data" name='userSearchingInputData' onSubmit={this.validateForm()} method="post">
-          <div name = 'startingPointRow'>
-            <label>Starting point: </label>
-            <label>latitude: </label>
-            <input type='textbox' name='lat'></input>
-            <label>longitude:</label>
-            <input type='textbox' name='lng'></input>
-          </div>
-          {/* <div> */}
-            {/* <select type="selector"></input> */}
-          {/* </div> */}
-          <div>
-           <p id="demo"></p>
-            <input type="submit" value="Submit" />
-          </div>
-        </form>
-        <br />
+        <div name = 'startingPointRow'>
+          <label>Starting point: </label>
+          <label>latitude: </label>
+          <input type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
+          <label>longitude:</label>
+          <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
+        </div>
+        {/* <div> */}
+          {/* <select type="selector"></input> */}
+        {/* </div> */}
         <div>
-          <AutosizeInput onChange={this.handleChange} name="query" value={this.state.query}/>
-          <button onClick = {this.searchPlace}>Search</button>
+          <button onClick={this.searchPlace}>Submit</button>
         </div>
-        <div className = "container">
-          <div id="map"></div>
-        </div>
+      <br />
+      <div>
+        <AutosizeInput onChange={this.handleChange} name="query" value={this.state.query}/>
+        <button onClick = {this.searchPlace}>Search</button>
       </div>
+      <div className = "container">
+        <div id="map"></div>
+      </div>
+    </div>
     );
   }
 }
