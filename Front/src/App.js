@@ -88,9 +88,7 @@ class App extends React.Component {
         startBtn.onclick = function () { 
            console.log("Setting new starting point");
            console.log('lat: ' + e.latlng.lat + ' lng:' + e.latlng.lng);
-           markerGroup.clearLayers();
            this.state.startingPointMarker.setLatLng([e.latlng.lat, e.latlng.lng]);
-           this.state.startingPointMarker.addTo(markerGroup);
            this.setState({
             startingPoint: { lat: e.latlng.lat, lng: e.latlng.lng }
            });
