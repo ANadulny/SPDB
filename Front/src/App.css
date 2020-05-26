@@ -9,5 +9,15 @@
   padding-top: 4px; 
   top: 20px;
   transition: margin-right 0.2s ease;
-  /* display: none; */
+  display: none;
+}
+
+.searchedFeatures {
+  align-items: center;
+  align-self: center;
+  text-align: center;
+}
+
+.boldOption {
+  font-weight: bold;
 }

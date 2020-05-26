@@ -1,14 +1,16 @@
 package com.example.SPDB.api;
 
+import com.example.SPDB.data.DataWrapper;
 import com.example.SPDB.data.Point;
 import com.example.SPDB.data.SearchedObject;
 import com.example.SPDB.data.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -16,13 +18,24 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-
+@Slf4j
 @RestController
 public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
 
-    @GetMapping("/api")
-    String OverpassApi() throws IOException {
+    @PostMapping("/data")
+    public String userData(@RequestParam String lat, @RequestParam String lng) throws JSONException {
+        log.info("lat = {}", lat);
+        log.info("lng = {}", lng);
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("lat", lat);
+        jsonObject.put("lng", lng);
+        return jsonObject.toString();
+    }
+
+    @PostMapping("/api")
+    String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
+        wrapper.getDistance();
         //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
         List<Tag> tags = new ArrayList() {{
             add(new Tag("natural", "water"));
@@ -65,9 +78,9 @@ public class OverpassApi {
             wayPart.append("[\"" + tag.getCategory() + "\"=\"" + tag.getObjectType() + "\"]");
             relationPart.append("[\"" + tag.getCategory() + "\"=\"" + tag.getObjectType() + "\"]");
         }
-        nodePart.append("(around:" + searchedObject.getDistance() + "," + aroundPoint.getLongitude() + "," + aroundPoint.getLatitude() + ");");
-        wayPart.append("(around:" + searchedObject.getDistance() + "," + aroundPoint.getLongitude() + "," + aroundPoint.getLatitude() + ");");
-        relationPart.append("(around:" + searchedObject.getDistance() + "," + aroundPoint.getLongitude() + "," + aroundPoint.getLatitude() + ");");
+        nodePart.append("(around:" + searchedObject.getDistance() + "," + aroundPoint.getLng() + "," + aroundPoint.getLat() + ");");
+        wayPart.append("(around:" + searchedObject.getDistance() + "," + aroundPoint.getLng() + "," + aroundPoint.getLat() + ");");
+        relationPart.append("(around:" + searchedObject.getDistance() + "," + aroundPoint.getLng() + "," + aroundPoint.getLat() + ");");
         query.append("(").append(nodePart).append(wayPart).append(relationPart).append(");");
         query.append("out%20body;>;out;");
         return query.toString();
