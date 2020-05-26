@@ -28,4 +28,18 @@ public class DataWrapper {
         this.precision = precision;
         this.vehicleType = vehicleType;
     }
+
+    @Override
+    public String toString() {
+        return "DataWrapper{" +
+                "startingPoint=" + startingPoint +
+                ", searchedObject=" + searchedObject +
+                ", searchedObjects=" + searchedObjects +
+                ", isAnd=" + isAnd +
+                ", distance=" + distance +
+                ", time=" + time +
+                ", precision=" + precision +
+                ", vehicleType=" + vehicleType +
+                '}';
+    }
 }

@@ -17,4 +17,13 @@ public class SearchedObject{
         this.distance = distance;
         this.time = time;
     }
+
+    @Override
+    public String toString() {
+        return "SearchedObject{" +
+                "tags=" + tags +
+                ", distance=" + distance +
+                ", time=" + time +
+                '}';
+    }
 }

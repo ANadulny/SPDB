@@ -14,4 +14,11 @@ public class Tag{
         this.objectType = objectType;
     }
 
+    @Override
+    public String toString() {
+        return "Tag{" +
+                "category='" + category + '\'' +
+                ", objectType='" + objectType + '\'' +
+                '}';
+    }
 }

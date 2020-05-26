@@ -23,19 +23,12 @@ import java.util.List;
 public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
 
-    @PostMapping("/data")
-    public String userData(@RequestParam String lat, @RequestParam String lng) throws JSONException {
-        log.info("lat = {}", lat);
-        log.info("lng = {}", lng);
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("lat", lat);
-        jsonObject.put("lng", lng);
-        return jsonObject.toString();
-    }
-
     @PostMapping("/api")
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
-        wrapper.getDistance();
+        log.info("Overpass api");
+        log.info("wrapper = {}", wrapper);
+
+        // == Testing data ==
         //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
         List<Tag> tags = new ArrayList() {{
             add(new Tag("natural", "water"));
@@ -44,6 +37,8 @@ public class OverpassApi {
         SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
 
         String query = prepareQuery(searchedObject, new Point(52.5464521,19.7008606));
+
+
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
         String responseFromOverpass = this.readDataFromURL(apiUrl + query);
         if(responseFromOverpass == null){

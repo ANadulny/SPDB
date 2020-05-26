@@ -13,4 +13,12 @@ public class Point{
         this.lat = latitude;
         this.lng = longitude;
     }
+
+    @Override
+    public String toString() {
+        return "Point{" +
+                "lat=" + lat +
+                ", lng=" + lng +
+                '}';
+    }
 }
