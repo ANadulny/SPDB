@@ -1,9 +1,6 @@
 package com.example.SPDB.api;
 
-import com.example.SPDB.data.DataWrapper;
-import com.example.SPDB.data.Point;
-import com.example.SPDB.data.SearchedObject;
-import com.example.SPDB.data.Tag;
+import com.example.SPDB.data.*;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,9 +21,10 @@ public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
 
     @PostMapping("/api")
-    String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
+//    String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
+    String OverpassApi() throws IOException {
         log.info("Overpass api");
-        log.info("wrapper = {}", wrapper);
+//        log.info("wrapper = {}", wrapper);
 
         // == Testing data ==
         //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
@@ -36,9 +34,10 @@ public class OverpassApi {
         }};
         SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
 
+        DataWrapper testingWrapper = new DataWrapper(new Point(52.5464521,19.7008606), searchedObject, new ArrayList<SearchedObject>(), false, 1000, VehicleType.CAR);
+        log.info("testingWrapper = {}", testingWrapper);
         String query = prepareQuery(searchedObject, new Point(52.5464521,19.7008606));
-
-
+        
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
         String responseFromOverpass = this.readDataFromURL(apiUrl + query);
         if(responseFromOverpass == null){

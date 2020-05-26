@@ -12,19 +12,14 @@ public class DataWrapper {
     SearchedObject searchedObject; //poszukiwane obiekty
     List<SearchedObject> searchedObjects; //lista obiektów, które muszą albo mogą być wokół poszukiwanych obiektów
     boolean isAnd; //true - koniunkcja false - alternatywa
-    double distance;
-    long time; //sekundy
     double precision; //jaki procent ma być przepuszczany przez graphhoppera
     VehicleType vehicleType;
 
-
-    public DataWrapper(Point startingPoint, SearchedObject searchedObject, List<SearchedObject> searchedObjects, boolean isAnd, double distance, long time, double precision, VehicleType vehicleType) {
+    public DataWrapper(Point startingPoint, SearchedObject searchedObject, List<SearchedObject> searchedObjects, boolean isAnd, double precision, VehicleType vehicleType) {
         this.startingPoint = startingPoint;
         this.searchedObject = searchedObject;
         this.searchedObjects = searchedObjects;
         this.isAnd = isAnd;
-        this.distance = distance;
-        this.time = time;
         this.precision = precision;
         this.vehicleType = vehicleType;
     }
@@ -36,8 +31,6 @@ public class DataWrapper {
                 ", searchedObject=" + searchedObject +
                 ", searchedObjects=" + searchedObjects +
                 ", isAnd=" + isAnd +
-                ", distance=" + distance +
-                ", time=" + time +
                 ", precision=" + precision +
                 ", vehicleType=" + vehicleType +
                 '}';
