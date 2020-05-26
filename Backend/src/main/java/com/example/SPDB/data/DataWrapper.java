@@ -35,4 +35,26 @@ public class DataWrapper {
                 ", vehicleType=" + vehicleType +
                 '}';
     }
+
+    public String prepareQuery() {
+        StringBuilder query = new StringBuilder();
+        StringBuilder nodePart = new StringBuilder("node");
+        StringBuilder wayPart = new StringBuilder("way");
+        StringBuilder relationPart = new StringBuilder("relation");
+
+        query.append("[out:json][timeout:25];");
+        for(Tag tag : this.searchedObject.getTags()){
+            nodePart.append(tag);
+            wayPart.append(tag);
+            relationPart.append(tag);
+        }
+
+        String around = "(around:" + this.searchedObject.getDistance() + "," + this.startingPoint.getLng() + "," + this.startingPoint.getLat() + ");";
+        nodePart.append(around);
+        wayPart.append(around);
+        relationPart.append(around);
+        query.append("(").append(nodePart).append(wayPart).append(relationPart).append(");");
+        query.append("out%20body;>;out;");
+        return query.toString();
+    }
 }

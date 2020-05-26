@@ -16,9 +16,6 @@ public class Tag{
 
     @Override
     public String toString() {
-        return "Tag{" +
-                "category='" + category + '\'' +
-                ", objectType='" + objectType + '\'' +
-                '}';
+        return "[\"" + this.category + "\"=\"" + this.objectType + "\"]";
     }
 }
