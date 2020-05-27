@@ -167,8 +167,9 @@ class App extends React.Component {
             .openOn(map);
     }.bind(this));
 
+    let key = "9f251f13-8860-4ec1-b248-29334abc9e46";
     var control = L.Routing.control({
-        router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
+        router: L.Routing.graphHopper(key),
     });
     control.addTo(map);
 
