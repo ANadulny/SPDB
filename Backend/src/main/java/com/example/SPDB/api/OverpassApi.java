@@ -7,7 +7,6 @@ import org.json.JSONObject;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedReader;
-import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
@@ -21,9 +20,11 @@ public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
 
     @PostMapping("/api")
+//    String OverpassApi() throws IOException {
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
         log.info("Overpass api");
         log.info("wrapper = {}", wrapper);
+        log.info("wrapper query = {}", wrapper.prepareQuery());
 
         // == Testing data ==
         //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
@@ -31,7 +32,7 @@ public class OverpassApi {
             add(new Tag("natural", "water"));
             add(new Tag("water", "lake"));
         }};
-        SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
+        SearchedObject searchedObject = new SearchedObject(tags, 15000.0f, 10);
         DataWrapper testingWrapper = new DataWrapper(new Point(52.5464521,19.7008606), searchedObject, new ArrayList<SearchedObject>(), false, 1000, VehicleType.CAR);
         log.info("testingWrapper = {}", testingWrapper);
 

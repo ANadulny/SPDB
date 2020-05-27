@@ -26,13 +26,13 @@ public class DataWrapper {
 
     @Override
     public String toString() {
-        return "DataWrapper{" +
-                "startingPoint=" + startingPoint +
-                ", searchedObject=" + searchedObject +
-                ", searchedObjects=" + searchedObjects +
-                ", isAnd=" + isAnd +
-                ", precision=" + precision +
-                ", vehicleType=" + vehicleType +
+        return "DataWrapper{\n" +
+                " startingPoint=" + startingPoint + '\n' +
+                " searchedObject=" + searchedObject + '\n' +
+                " searchedObjects=" + searchedObjects + '\n' +
+                " isAnd=" + isAnd + '\n' +
+                " precision=" + precision + '\n' +
+                " vehicleType=" + vehicleType + '\n' +
                 '}';
     }
 
@@ -49,7 +49,7 @@ public class DataWrapper {
             relationPart.append(tag);
         }
 
-        String around = "(around:" + this.searchedObject.getDistance() + "," + this.startingPoint.getLng() + "," + this.startingPoint.getLat() + ");";
+        String around = "(around:" + this.searchedObject.getDistance() + "," + this.startingPoint.getLat() + "," + this.startingPoint.getLng() + ");";
         nodePart.append(around);
         wayPart.append(around);
         relationPart.append(around);

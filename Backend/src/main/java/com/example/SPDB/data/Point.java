@@ -9,7 +9,7 @@ public class Point{
     double lat;
     double lng;
 
-    public Point(double longitude, double latitude) {
+    public Point(double latitude, double longitude) {
         this.lat = latitude;
         this.lng = longitude;
     }
