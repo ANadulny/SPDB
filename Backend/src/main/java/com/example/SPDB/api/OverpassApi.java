@@ -12,9 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -32,21 +30,12 @@ public class OverpassApi {
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
         String responseFromOverpass = getResponseFromOverpass(wrapper);
 
-        // TODO create method
-        JSONObject jsonObject;
-        try {
-            jsonObject = new JSONObject(responseFromOverpass);
-        }catch(JSONException e) {
-            log.error("JSONException = {}", e.getMessage());
-            return null;
-        }
+        JSONObject jsonObject = createJsonObject(responseFromOverpass);
 
         //Przygotowanie obiektów dla grafu hoppera
-        HashMap<Point, Long> searchingObjectsMap;
-        try {
-            searchingObjectsMap = getObjectPointsMapWithObjectId(jsonObject);
-        }catch(JSONException e) {
-            log.error("JSONException = {}", e.getMessage());
+        HashMap<Point, Long> searchingObjectsMap = getObjectPointsMapWithObjectId(jsonObject);
+        if (searchingObjectsMap == null){
+            log.error("Searching objects map is equal null!");
             return null;
         }
 
@@ -55,10 +44,6 @@ public class OverpassApi {
 
         log.info("after graph hopper filter searchingObjectsMap = {}", searchingObjectsMap.toString());
 
-//        log.info("jsonObject = {}", jsonObject);
-
-        //Tutaj będzie graphhopper
-
         //Tutaj będzie zawężanie do tych, które spełniają warunki z listy
 
         //Tutaj będzie można już zwrócić odpowiedź
@@ -66,16 +51,31 @@ public class OverpassApi {
         return jsonObject.toString();
     }
 
-    private HashMap<Point, Long> getObjectPointsMapWithObjectId(JSONObject jsonObject) throws JSONException {
+    private JSONObject createJsonObject(String response) {
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            return jsonObject;
+        }catch(JSONException e) {
+            log.error("JSONException = {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private HashMap<Point, Long> getObjectPointsMapWithObjectId(JSONObject jsonObject) {
         HashMap<Point, Long> findingPoints = new HashMap<Point, Long>();
         // wariant dla obiektu typu pojedynczy punkt na mapie
-        JSONArray elements = jsonObject.getJSONArray("elements");
-        for (int i=0; i < elements.length(); i++) {
-            JSONObject element = elements.getJSONObject(i);
-            double lat = Double.parseDouble(element.getString("lat"));
-            double lon = Double.parseDouble(element.getString("lon"));
-            long id = Long.parseLong(element.getString("id"));
-            findingPoints.put(new Point(lat, lon), id);
+        try {
+            JSONArray elements = jsonObject.getJSONArray("elements");
+            for (int i=0; i < elements.length(); i++) {
+                JSONObject element = elements.getJSONObject(i);
+                double lat = Double.parseDouble(element.getString("lat"));
+                double lon = Double.parseDouble(element.getString("lon"));
+                long id = Long.parseLong(element.getString("id"));
+                findingPoints.put(new Point(lat, lon), id);
+            }
+        }catch(JSONException e) {
+            log.error("JSONException = {}", e.getMessage());
+            return null;
         }
 
         // TODO wariant dla obiektów typu polygon
@@ -104,10 +104,8 @@ public class OverpassApi {
     }
 
     private boolean isTimeOk(String graphHopperResponse, long time) {
-        JSONObject jsonObject;
         try {
-            jsonObject = new JSONObject(graphHopperResponse);
-            long travelingTime = jsonObject.getJSONArray("paths").getJSONObject(0).getLong("time");
+            long travelingTime = createJsonObject(graphHopperResponse).getJSONArray("paths").getJSONObject(0).getLong("time");
             travelingTime /= 1000; // converting from ms to s
             log.info("travelingTime = {}", travelingTime);
             return travelingTime < time ? true : false;
