@@ -86,13 +86,21 @@ public class OverpassApi {
         // wariant dla obiektu typu pojedynczy punkt na mapie
         try {
             JSONArray elements = jsonObject.getJSONArray("elements");
-            for (int i=0; i < elements.length(); i++) {
-                JSONObject element = elements.getJSONObject(i);
-                double lat = Double.parseDouble(element.getString("lat"));
-                double lon = Double.parseDouble(element.getString("lon"));
-                long id = Long.parseLong(element.getString("id"));
-                findingPoints.put(new Point(lat, lon), id);
+            // TODO need changes
+            if (elements.length() > 0 && isSinglePoint(elements.getJSONObject(0))) {
+                log.info("json array of single points");
+                for (int i=0; i < elements.length(); i++) {
+                    JSONObject element = elements.getJSONObject(i);
+                    double lat = Double.parseDouble(element.getString("lat"));
+                    double lon = Double.parseDouble(element.getString("lon"));
+                    long id = Long.parseLong(element.getString("id"));
+                    findingPoints.put(new Point(lat, lon), id);
+                }
+            } else {
+                // TODO
+                log.info("json array of polygon objects");
             }
+
         }catch(JSONException e) {
             log.error("JSONException = {}", e.getMessage());
             return null;
@@ -101,6 +109,10 @@ public class OverpassApi {
         // TODO wariant dla obiektów typu polygon
 
         return findingPoints;
+    }
+
+    private boolean isSinglePoint(JSONObject jsonObject) {
+        return jsonObject.isNull("nodes");
     }
 
     private String getResponseFromOverpass(DataWrapper wrapper) throws MalformedURLException {
