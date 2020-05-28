@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -45,10 +46,29 @@ public class OverpassApi {
         log.info("after graph hopper filter searchingObjectsMap = {}", searchingObjectsMap.toString());
 
         //Tutaj będzie zawężanie do tych, które spełniają warunki z listy
+        searchingObjectsMap = filterSearchingObjectsWithUserConditions(searchingObjectsMap, wrapper);
+        log.info("searchingObjectsMap = {}", searchingObjectsMap);
 
-        //Tutaj będzie można już zwrócić odpowiedź
+        //Tutaj jest zwracana odpowiedz po usunięciu obiektów nie spełniających warunki użytkownika
+        jsonObject = removeInvalidObjects(jsonObject, searchingObjectsMap);
+        log.info("jsonObject = {}", jsonObject);
 
-        return jsonObject.toString();
+        return "jsonObject.toString()";
+//        return jsonObject.toString();
+    }
+
+    // TODO
+    private JSONObject removeInvalidObjects(JSONObject jsonObject, HashMap<Point, Long> searchingObjectsMap) {
+        return null;
+    }
+
+    // TODO
+    private HashMap<Point, Long> filterSearchingObjectsWithUserConditions(HashMap<Point, Long> searchingObjectsMap, DataWrapper wrapper) {
+        VehicleType vehicleType = wrapper.getVehicleType();
+        List<SearchedObject> searchedObjects = wrapper.getSearchedObjects();
+        boolean isAnd = wrapper.isAnd();
+
+        return null;
     }
 
     private JSONObject createJsonObject(String response) {
@@ -88,19 +108,36 @@ public class OverpassApi {
         return response == null ? "" : response;
     }
 
-    // TODO check if works
     private HashMap<Point, Long> graphHopperFilterTravelTime(HashMap<Point, Long> searchingObjects, DataWrapper wrapper) throws MalformedURLException {
         HashMap<Point, Long> filteredPoints = new HashMap<Point, Long>();
         for(Map.Entry<Point, Long> entry : searchingObjects.entrySet()) {
             Point key = entry.getKey();
             long value = entry.getValue();
-            String graphHopperResponse = getGraphHopperResponse(wrapper.getStartingPoint(), key, wrapper.getVehicleType());
-            log.info("graphHopperResponse = {}", graphHopperResponse);
-            if (isTimeOk(graphHopperResponse, wrapper.getSearchedObject().getTime())) {
+            if (isDistanceEnoughToCheckGraphHooper(wrapper.getPrecision(), wrapper.getStartingPoint(), key, wrapper.getSearchedObject().getDistance())) {
+                String graphHopperResponse = getGraphHopperResponse(wrapper.getStartingPoint(), key, wrapper.getVehicleType());
+                log.info("graphHopperResponse = {}", graphHopperResponse);
+                if (isTimeOk(graphHopperResponse, wrapper.getSearchedObject().getTime())) {
+                    filteredPoints.put(key, value);
+                }
+            } else {
                 filteredPoints.put(key, value);
             }
         }
         return filteredPoints;
+    }
+
+    // TODO check if precision work correctly - (precision / 100)???
+    private boolean isDistanceEnoughToCheckGraphHooper(double precision, Point startingPoint, Point endingPoint, double distance) {
+        return calculateDistanceBetweenPoints(startingPoint, endingPoint) > (precision / 100) * distance ? true : false;
+    }
+
+    private double calculateDistanceBetweenPoints(Point startingPoint, Point endingPoint) {
+        double x1, x2, y1, y2;
+        x1=startingPoint.getLat();
+        y1=startingPoint.getLng();
+        x2=endingPoint.getLat();
+        y2=endingPoint.getLng();
+        return Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
     }
 
     private boolean isTimeOk(String graphHopperResponse, long time) {
@@ -121,7 +158,7 @@ public class OverpassApi {
                 "&point=" + endingPoint.getLat() + "," + endingPoint.getLng() + "&vehicle=" + vehicleType);
     }
 
-    String readDataFromURL(String address) throws MalformedURLException {
+    private String readDataFromURL(String address) throws MalformedURLException {
         URL url = new URL(address);
         StringBuilder builder = new StringBuilder();
         try {
