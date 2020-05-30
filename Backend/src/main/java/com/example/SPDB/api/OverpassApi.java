@@ -12,9 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -22,7 +20,6 @@ public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
 
     @PostMapping("/api")
-//    String OverpassApi() throws IOException {
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
         log.info("Overpass api");
         log.info("wrapper = {}", wrapper);
@@ -86,33 +83,72 @@ public class OverpassApi {
         // wariant dla obiektu typu pojedynczy punkt na mapie
         try {
             JSONArray elements = jsonObject.getJSONArray("elements");
-            // TODO need changes
-            if (elements.length() > 0 && isSinglePoint(elements.getJSONObject(0))) {
-                log.info("json array of single points");
-                for (int i=0; i < elements.length(); i++) {
-                    JSONObject element = elements.getJSONObject(i);
+            List <Polygon> polygons = new ArrayList<>();
+            for (int i=0; i < elements.length(); i++) {
+                JSONObject element = elements.getJSONObject(i);
+                long id = Long.parseLong(element.getString("id"));
+                String type = element.getString("type");
+
+                if (isNodeType(type)) {
+                    log.info("is node type");
+                    if(polygons.size() > 0) {
+                        log.info("Polygon with id = {} filling with Point parameter", id);
+
+                        //TODO needs work - usunac sortowanie nodow
+                        boolean foundElement = false;
+                        for (long node: polygons.get(0).getNodes()) {
+                            if (node == id) {
+                                if(!foundElement) {
+                                    foundElement = true;
+                                    double lat = Double.parseDouble(element.getString("lat"));
+                                    double lon = Double.parseDouble(element.getString("lon"));
+                                    findingPoints.put(new Point(lat, lon), id);
+                                }
+                                i++;
+                                if ( i < elements.length()) {
+                                    element = elements.getJSONObject(i);
+                                    id = Long.parseLong(element.getString("id"));
+                                }
+                            }
+                        }
+                        polygons.remove(0);
+                    } else {
+                        log.warn("It is some problem in getObjectPointsMapWithObjectId in iteration = {}", i);
+                    }
+                } else if (isSinglePoint(element, type)) {
+                    log.info("json array of single points");
                     double lat = Double.parseDouble(element.getString("lat"));
                     double lon = Double.parseDouble(element.getString("lon"));
-                    long id = Long.parseLong(element.getString("id"));
                     findingPoints.put(new Point(lat, lon), id);
+                } else {
+                    log.info("json array of polygon objects");
+                    ArrayList<Long> nodes = jsonStringToArray(element.getJSONArray("nodes"));
+                    Collections.sort(nodes);
+                    polygons.add(new Polygon(id, nodes));
                 }
-            } else {
-                // TODO
-                log.info("json array of polygon objects");
             }
-
         }catch(JSONException e) {
             log.error("JSONException = {}", e.getMessage());
             return null;
         }
 
-        // TODO wariant dla obiektów typu polygon
-
         return findingPoints;
     }
 
-    private boolean isSinglePoint(JSONObject jsonObject) {
-        return jsonObject.isNull("nodes");
+    private boolean isNodeType(String type) {
+        return Objects.equals(type, "node");
+    }
+
+    ArrayList<Long> jsonStringToArray(JSONArray jsonArray) throws JSONException {
+        ArrayList<Long> longArray = new ArrayList<>();
+        for (int i = 0; i < jsonArray.length(); i++) {
+            longArray.add(Long.parseLong(jsonArray.getString(i)));
+        }
+        return longArray;
+    }
+
+    private boolean isSinglePoint(JSONObject jsonObject, String objectType) {
+        return jsonObject.isNull("nodes") && !isNodeType((objectType));
     }
 
     private String getResponseFromOverpass(DataWrapper wrapper) throws MalformedURLException {
