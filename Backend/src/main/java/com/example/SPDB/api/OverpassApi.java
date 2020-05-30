@@ -41,7 +41,7 @@ public class OverpassApi {
             add(new Tag("natural", "water"));
             add(new Tag("water", "lake"));
         }};
-        SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
+        SearchedObject searchedObject = new SearchedObject(tags, 15000.0f, 10);
 
         String query = prepareQuery(searchedObject, new Point(52.5464521,19.7008606));
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
