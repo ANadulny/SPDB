@@ -1,8 +1,11 @@
 import React from "react";
 import L, { marker } from 'leaflet';
 import "./App.css";
-import AutosizeInput from 'react-input-autosize'
-var overpass = require("query-overpass")
+import AutosizeInput from 'react-input-autosize';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { Button, Table } from 'react-bootstrap';
+import Collapsible from 'react-collapsible';
+var osmtogeojson = require('osmtogeojson')
 
 require('leaflet-routing-machine'); // Adds L.Routing onto L
 require('lrm-graphhopper'); // Adds L.Routing.GraphHopper onto L.Routing
@@ -13,11 +16,10 @@ class App extends React.Component {
     this.state = {
       startingPoint: { lat: 0.0, lng: 0.0 },
       activeMapFeature: null,
-      mapData: null,
-      query: "",
       startingPointMarker: new L.Marker([0,0]),
       startingPointRadius: new L.circle([0,0],0),
       geoJsonLayer: null,
+      displaySearchPanel: false,
       
       time: '',
       length: '',
@@ -50,18 +52,21 @@ class App extends React.Component {
     }
   }
 
-  callback(error, data){
-    if(error){
-      alert("error: " + error);
+  callback(data){
+    if(false){
+      alert("error: ");
     }
     else{
-      var geoJsonLayer = L.geoJSON(data, {onEachFeature: this.onEachFeature});
+      var options = options || {};
+      var geojson = osmtogeojson(data, {
+        flatProperties: options.flatProperties || false
+      });
+
+      var geoJsonLayer = L.geoJSON(geojson, {onEachFeature: this.onEachFeature});
       
       this.state.geoJsonLayer.clearLayers();
       geoJsonLayer.addTo(this.state.map);
       this.setState({
-        mapData: data,
-        result: JSON.stringify(data),
         geoJsonLayer: geoJsonLayer
       });
     }
@@ -82,7 +87,6 @@ class App extends React.Component {
   searchPlace(event){
     //Do stuff
     alert("searching stuff!");
-    console.log(this.state.searchedFeatures);
     var tagsToSend = this.createTagList(this.state.searchedObject.elemList);
 
     var searchedFeaturesToSend = [];
@@ -125,9 +129,11 @@ class App extends React.Component {
     })
     .then(res=>res.json())
     .then(json => {
-      console.log(json)
+      console.log(json);
+      this.callback(json);
+    }).catch(err => {
+      alert("There was some kind of error with response!");
     });
-    //overpass(this.state.query, this.callback);
   }
 
   componentDidMount(){
@@ -166,13 +172,6 @@ class App extends React.Component {
             .setLatLng(e.latlng)
             .openOn(map);
     }.bind(this));
-
-    var control = L.Routing.control({
-        router: L.Routing.graphHopper('9f251f13-8860-4ec1-b248-29334abc9e46'),
-    });
-    control.addTo(map);
-
-    L.Routing.errorControl(control).addTo(map);
 
     var geoJsonLayer = L.geoJSON();
     geoJsonLayer.addTo(map)
@@ -276,7 +275,12 @@ class App extends React.Component {
     const value = target.value;
     const name = target.name;
     console.log(value + name);
-    alert("remove: " + value);
+    var searchedFeatures = this.state.searchedFeatures;
+    searchedFeatures.splice(Number(value), 1);
+    this.setState({
+      searchedFeatures: searchedFeatures
+    }, () => this.render());
+    //alert("remove: " + value);
     //TO DO!
   }
 
@@ -383,24 +387,24 @@ class App extends React.Component {
   }
 
   render(){
-    console.log(this.state.searchedFeatures);
     var availableFeatures = new AvailableFeatures();
     var rowIndex = -1;
     var searchedFeatures;
     
     var isAndBox;
     if(this.state.isAnd){
-      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange}></input>;
-    }
-    else{
       isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange} checked></input>;
     }
+    else{
+      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange}></input>;
+    }
 
-    searchedFeatures = <div><table>
+    searchedFeatures = <tbody>
       {this.state.searchedFeatures.map((elem) => {
         rowIndex++;
         return (
           <tr>
+          <th scope="row">{rowIndex+1}</th>
           <td>
             <select onChange = {this.handleFeatureTagSelect}>
             <option value={[rowIndex, 0, "ignore"]}>---Please select type---</option>
@@ -412,16 +416,11 @@ class App extends React.Component {
           </td>
             {this.renderAdditionalFields(rowIndex, 1, this.state.searchedFeatures[rowIndex].elemList[0], this.handleFeatureTagSelect)}
             {this.renderAdditionalFields(rowIndex, 2, [this.state.searchedFeatures[rowIndex].elemList[0], this.state.searchedFeatures[rowIndex].elemList[1]], this.handleFeatureTagSelect)}
-          <td><label>Distance: </label><input onChange = {this.handleDistanceForSearchedFeaturesChange} name={rowIndex} value={this.state.searchedFeatures[rowIndex].distance}></input></td>
-          <td><button onClick = {this.removeSearchedFeature} value={rowIndex}>Remove</button></td>
+          <td><input onChange = {this.handleDistanceForSearchedFeaturesChange} name={rowIndex} value={this.state.searchedFeatures[rowIndex].distance}></input></td>
+          <td><Button onClick = {this.removeSearchedFeature} value={rowIndex} variant="danger">Remove</Button></td>
           </tr>)}
       )}
-    </table>
-    <button onClick = {this.addNewRowForSearchedFeature}>Add</button>
-    <br></br>
-    <label>Alternative? </label>
-    {isAndBox}
-    </div>;
+    </tbody>;
 
     var searchedObject = <div>
       <table>
@@ -442,43 +441,62 @@ class App extends React.Component {
     </div>
 
     return (
-      <div>
-        <div name = 'startingPointRow'>
-          <label>Starting point: </label>
-          <label>latitude: </label>
-          <input type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
-          <label>longitude:</label>
-          <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
-          <label>radius:</label>
-          <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
-          <label>precision:</label>
-          <input name="precision" value={this.state.precision} onChange={this.handleChange}></input>
+      <div class="border p-3">
+        <Collapsible trigger="Search Panel">
+        <div class="content">
+          <div class="border p-3">
+            <h2>Starting point</h2>
+            <label>latitude: </label>
+            <input type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
+            <label>longitude:</label>
+            <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
+            <label>radius:</label>
+            <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
+            <label>precision:</label>
+            <input name="precision" value={this.state.precision} onChange={this.handleChange}></input>
+          </div>
+          <div class="border p-3">
+            <table align="center">
+            {searchedObject}
+            </table>
+          </div>
+          <div class="border p-3">
+            <table class="table table-striped table-bordered table-hover searchedFeatures">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Feature</th>
+                  <th scope="col">SubFeature</th>
+                  <th scope="col">SubFeature</th>
+                  <th scope="col">Distance</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              {searchedFeatures}
+            </table>
+            <Button onClick = {this.addNewRowForSearchedFeature} variant="primary">Add</Button>
+            <br></br>
+            <label>Conjunction?</label>
+            {isAndBox}
+            <small class="form-text text-muted">Do you need all additional features?</small>
+          </div>
+          <div class="border p-3">
+            <label>Vehicle: </label>
+            <select name="vehicle" onChange={this.handleChange}>
+              <option value="">-Select Vehicle-</option>
+              <option>Car</option>
+              <option>Bike</option>
+              <option>Foot</option>
+            </select>
+            <label>Time (s)</label>
+            <input onChange={this.handleChange} value={this.state.time} name="time"></input>
+            <br></br>
+            <Button onClick={this.searchPlace} variant="success">Submit</Button>
+          </div>
+          <br />
         </div>
-        <div class = "searchedFeatures">
-          <table align="center">
-          {searchedObject}
-          </table>
-        </div>
-        <div class = "searchedFeatures">
-          <table align="center">
-          {searchedFeatures}
-          </table>
-        </div>
-        <div>
-          <label>Vehicle: </label>
-          <select name="vehicle" onChange={this.handleChange}>
-            <option value="">-Select Vehicle-</option>
-            <option>Car</option>
-            <option>Bike</option>
-            <option>Foot</option>
-          </select>
-          <label>Time (s)</label>
-          <input onChange={this.handleChange} value={this.state.time} name="time"></input>
-          <br></br>
-          <button onClick={this.searchPlace}>Submit</button>
-        </div>
-      <br />
-      <div className = "container">
+        </Collapsible>
+      <div className = "border p-3">
         <div id="map"></div>
       </div>
     </div>

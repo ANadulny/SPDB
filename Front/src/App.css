@@ -21,3 +21,10 @@
 .boldOption {
   font-weight: bold;
 }
+
+.Collapsible{
+  background-color: white;
+  border-style: solid;
+  border-width: thin;
+
+}
