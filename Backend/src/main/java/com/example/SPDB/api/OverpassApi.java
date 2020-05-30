@@ -31,7 +31,7 @@ public class OverpassApi {
         JSONObject jsonObject = createJsonObject(responseFromOverpass);
 
         //Przygotowanie obiektów dla grafu hoppera
-        HashMap<Point, Long> searchingObjectsMap = getObjectPointsMapWithObjectId(jsonObject);
+        HashMap<Long, Point> searchingObjectsMap = getObjectPointsMapWithObjectId(jsonObject);
         if (searchingObjectsMap == null){
             log.error("Searching objects map is equal null!");
             return null;
@@ -47,25 +47,50 @@ public class OverpassApi {
         log.info("searchingObjectsMap = {}", searchingObjectsMap);
 
         //Tutaj jest zwracana odpowiedz po usunięciu obiektów nie spełniających warunki użytkownika
-        jsonObject = removeInvalidObjects(jsonObject, searchingObjectsMap);
+        List<Long> searchingObjectsIdNumbers = new ArrayList<>(searchingObjectsMap.keySet());
+        log.info("searchingObjectsIdNumbers = {}", searchingObjectsIdNumbers);
+        jsonObject = removeInvalidObjects(jsonObject, searchingObjectsIdNumbers);
         log.info("jsonObject = {}", jsonObject);
 
-        return "jsonObject.toString()";
-//        return jsonObject.toString();
+        return jsonObject.toString();
     }
 
     // TODO
-    private JSONObject removeInvalidObjects(JSONObject jsonObject, HashMap<Point, Long> searchingObjectsMap) {
-        return null;
+    private JSONObject removeInvalidObjects(JSONObject jsonObject, List<Long> searchingObjectsIdList) {
+        log.info("removeInvalidObjects method");
+        try {
+            JSONArray elements = jsonObject.getJSONArray("elements");
+            JSONArray newElementsJSONObject = new JSONArray();
+
+            for (int i=0; i < elements.length(); i++) {
+                JSONObject element = elements.getJSONObject(i);
+                long id = Long.parseLong(element.getString("id"));
+                String type = element.getString("type");
+
+                if (isNodeType(type)) {
+                    newElementsJSONObject.put(element);
+                } else if (!searchingObjectsIdList.isEmpty() && searchingObjectsIdList.get(0) == id) {
+                    log.info("is correct object found with id {}", id);
+                    newElementsJSONObject.put(element);
+                    searchingObjectsIdList.remove(0);
+                }
+            }
+
+            jsonObject.put("elements", newElementsJSONObject);
+        }catch(JSONException e) {
+            log.error("JSONException = {}. It was error in removeInvalidObjects method!", e.getMessage());
+            return new JSONObject();
+        }
+        return jsonObject;
     }
 
     // TODO
-    private HashMap<Point, Long> filterSearchingObjectsWithUserConditions(HashMap<Point, Long> searchingObjectsMap, DataWrapper wrapper) {
+    private HashMap<Long, Point> filterSearchingObjectsWithUserConditions(HashMap<Long, Point> searchingObjectsMap, DataWrapper wrapper) {
         VehicleType vehicleType = wrapper.getVehicleType();
         List<SearchedObject> searchedObjects = wrapper.getSearchedObjects();
         boolean isAnd = wrapper.isAnd();
 
-        return null;
+        return searchingObjectsMap;
     }
 
     private JSONObject createJsonObject(String response) {
@@ -78,8 +103,8 @@ public class OverpassApi {
         }
     }
 
-    private HashMap<Point, Long> getObjectPointsMapWithObjectId(JSONObject jsonObject) {
-        HashMap<Point, Long> findingPoints = new HashMap<Point, Long>();
+    private HashMap<Long, Point> getObjectPointsMapWithObjectId(JSONObject jsonObject) {
+        HashMap<Long, Point> findingPoints = new HashMap<Long, Point>();
         // wariant dla obiektu typu pojedynczy punkt na mapie
         try {
             JSONArray elements = jsonObject.getJSONArray("elements");
@@ -90,6 +115,7 @@ public class OverpassApi {
                 String type = element.getString("type");
 
                 if (isNodeType(type)) {
+                    // TODO posortowac raz i przegladac czy pierwszy elem zgadza sie , jak tak to ustaw punkt i usun elem z listy - uwaga case z dowama takimi samymi node'ami w liscie
                     log.info("is node type");
                     if(polygons.size() > 0) {
                         log.info("Polygon with id = {} filling with Point parameter", id);
@@ -102,7 +128,7 @@ public class OverpassApi {
                                     foundElement = true;
                                     double lat = Double.parseDouble(element.getString("lat"));
                                     double lon = Double.parseDouble(element.getString("lon"));
-                                    findingPoints.put(new Point(lat, lon), id);
+                                    findingPoints.put(polygons.get(0).getId(), new Point(lat, lon));
                                 }
                                 i++;
                                 if ( i < elements.length()) {
@@ -119,7 +145,7 @@ public class OverpassApi {
                     log.info("json array of single points");
                     double lat = Double.parseDouble(element.getString("lat"));
                     double lon = Double.parseDouble(element.getString("lon"));
-                    findingPoints.put(new Point(lat, lon), id);
+                    findingPoints.put(id, new Point(lat, lon));
                 } else {
                     log.info("json array of polygon objects");
                     ArrayList<Long> nodes = jsonStringToArray(element.getJSONArray("nodes"));
@@ -156,19 +182,19 @@ public class OverpassApi {
         return response == null ? "" : response;
     }
 
-    private HashMap<Point, Long> graphHopperFilterTravelTime(HashMap<Point, Long> searchingObjects, DataWrapper wrapper) throws MalformedURLException {
-        HashMap<Point, Long> filteredPoints = new HashMap<Point, Long>();
-        for(Map.Entry<Point, Long> entry : searchingObjects.entrySet()) {
-            Point key = entry.getKey();
-            long value = entry.getValue();
-            if (isDistanceEnoughToCheckGraphHooper(wrapper.getPrecision(), wrapper.getStartingPoint(), key, wrapper.getSearchedObject().getDistance())) {
-                String graphHopperResponse = getGraphHopperResponse(wrapper.getStartingPoint(), key, wrapper.getVehicleType());
+    private HashMap<Long, Point> graphHopperFilterTravelTime(HashMap<Long, Point> searchingObjects, DataWrapper wrapper) throws MalformedURLException {
+        HashMap<Long, Point> filteredPoints = new HashMap<Long, Point>();
+        for(Map.Entry<Long, Point> entry : searchingObjects.entrySet()) {
+            Point point = entry.getValue();
+            long id = entry.getKey();
+            if (isDistanceEnoughToCheckGraphHooper(wrapper.getPrecision(), wrapper.getStartingPoint(), point, wrapper.getSearchedObject().getDistance())) {
+                String graphHopperResponse = getGraphHopperResponse(wrapper.getStartingPoint(), point, wrapper.getVehicleType());
                 log.info("graphHopperResponse = {}", graphHopperResponse);
                 if (isTimeOk(graphHopperResponse, wrapper.getSearchedObject().getTime())) {
-                    filteredPoints.put(key, value);
+                    filteredPoints.put(id, point);
                 }
             } else {
-                filteredPoints.put(key, value);
+                filteredPoints.put(id, point);
             }
         }
         return filteredPoints;
