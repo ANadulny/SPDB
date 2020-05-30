@@ -26,7 +26,7 @@ public class OverpassApi {
         log.info("wrapper query = {}", wrapper.prepareQuery());
 
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
-        String responseFromOverpass = getResponseFromOverpass(wrapper);
+        String responseFromOverpass = getResponseFromOverpass(wrapper.prepareQuery());
 
         JSONObject jsonObject = createJsonObject(responseFromOverpass);
 
@@ -93,19 +93,45 @@ public class OverpassApi {
 
     // TODO
     private HashMap<Long, Point> filterSearchingObjectsWithUserConditions(HashMap<Long, Point> searchingObjectsMap, DataWrapper wrapper) {
-        VehicleType vehicleType = wrapper.getVehicleType();
         List<SearchedObject> searchedObjects = wrapper.getSearchedObjects();
-        boolean isAnd = wrapper.isAnd();
+        HashMap<Long, Point> filteredSearchingObjectMap = new HashMap<>();
         log.info("searchedObjects = {}", searchedObjects);
-        if (isAnd) {
-            log.info("situation with and");
 
-        } else {
-            log.info("situation with alternative");
+        for(Map.Entry<Long, Point> entry : searchingObjectsMap.entrySet()) {
+            Point point = entry.getValue();
+            boolean foundObjectsIsOk = wrapper.isAnd() ? true : false;
+            for (SearchedObject searchedObject : searchedObjects) {
+                try {
+                    String responseFromOverpass = getResponseFromOverpass(prepareConditionQuery(searchedObject, point));
+                    JSONObject jsonObject = createJsonObject(responseFromOverpass);
+                    if (wrapper.isAnd() && !isFoundSearchingConditionObject(jsonObject)) {
+//                      log.info("situation with and");
+                        foundObjectsIsOk = false;
+                    } else if (!wrapper.isAnd() && isFoundSearchingConditionObject(jsonObject)) {
+//                        log.info("situation with alternative");
+                        foundObjectsIsOk = true;
+                        continue;
+                    }
+                } catch (MalformedURLException e) {
+                    log.error("MalformedURLException in filterSearchingObjectsWithUserConditions");
+                }
+            }
 
+            if (foundObjectsIsOk) {
+                filteredSearchingObjectMap.put(entry.getKey(), entry.getValue());
+            }
         }
+        return filteredSearchingObjectMap;
+    }
 
-        return searchingObjectsMap;
+    private boolean isFoundSearchingConditionObject(JSONObject jsonObject) {
+        try {
+            JSONArray elements = jsonObject.getJSONArray("elements");
+            return elements == null ? false : true;
+        }catch(JSONException e) {
+            log.error("JSONException in isFoundSearchingConditionObject = {}", e.getMessage());
+            return false;
+        }
     }
 
     private JSONObject createJsonObject(String response) {
@@ -183,8 +209,8 @@ public class OverpassApi {
         return jsonObject.isNull("nodes");
     }
 
-    private String getResponseFromOverpass(DataWrapper wrapper) throws MalformedURLException {
-        String response = this.readDataFromURL(apiUrl + wrapper.prepareQuery());
+    private String getResponseFromOverpass(String query) throws MalformedURLException {
+        String response = this.readDataFromURL(apiUrl + query);
         return response == null ? "" : response;
     }
 
@@ -254,5 +280,27 @@ public class OverpassApi {
             return null;
         }
         return builder.toString();
+    }
+
+    private String prepareConditionQuery(SearchedObject searchedObject, Point startingPoint) {
+        StringBuilder query = new StringBuilder();
+        StringBuilder nodePart = new StringBuilder("node");
+        StringBuilder wayPart = new StringBuilder("way");
+        StringBuilder relationPart = new StringBuilder("relation");
+
+        query.append("[out:json][timeout:25];");
+        for(Tag tag : searchedObject.getTags()){
+            nodePart.append(tag);
+            wayPart.append(tag);
+            relationPart.append(tag);
+        }
+
+        String around = "(around:" + searchedObject.getDistance() + "," + startingPoint.getLat() + "," + startingPoint.getLng() + ");";
+        nodePart.append(around);
+        wayPart.append(around);
+        relationPart.append(around);
+        query.append("(").append(nodePart).append(wayPart).append(relationPart).append(");");
+        query.append(">;out;");
+        return query.toString();
     }
 }
