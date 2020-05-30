@@ -91,7 +91,6 @@ public class OverpassApi {
         return jsonObject;
     }
 
-    // TODO
     private HashMap<Long, Point> filterSearchingObjectsWithUserConditions(HashMap<Long, Point> searchingObjectsMap, DataWrapper wrapper) {
         List<SearchedObject> searchedObjects = wrapper.getSearchedObjects();
         HashMap<Long, Point> filteredSearchingObjectMap = new HashMap<>();
@@ -105,10 +104,8 @@ public class OverpassApi {
                     String responseFromOverpass = getResponseFromOverpass(prepareConditionQuery(searchedObject, point));
                     JSONObject jsonObject = createJsonObject(responseFromOverpass);
                     if (wrapper.isAnd() && !isFoundSearchingConditionObject(jsonObject)) {
-//                      log.info("situation with and");
                         foundObjectsIsOk = false;
                     } else if (!wrapper.isAnd() && isFoundSearchingConditionObject(jsonObject)) {
-//                        log.info("situation with alternative");
                         foundObjectsIsOk = true;
                         continue;
                     }
