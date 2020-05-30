@@ -18,6 +18,14 @@ public class Polygon {
         this.nearestPoint = new Point(0,0);
     }
 
+    public boolean isFirstNode() {
+        return !nodes.isEmpty();
+    }
+
+    public Long getFirstNode() {
+        return isFirstNode() ? nodes.get(0) : 0L;
+    }
+
     @Override
     public String toString() {
         return "Polygon{" +

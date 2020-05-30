@@ -115,31 +115,19 @@ public class OverpassApi {
                 String type = element.getString("type");
 
                 if (isNodeType(type)) {
-                    // TODO posortowac raz i przegladac czy pierwszy elem zgadza sie , jak tak to ustaw punkt i usun elem z listy - uwaga case z dowama takimi samymi node'ami w liscie
                     log.info("is node type");
-                    if(polygons.size() > 0) {
-                        log.info("Polygon with id = {} filling with Point parameter", id);
 
-                        //TODO needs work - usunac sortowanie nodow
-                        boolean foundElement = false;
-                        for (long node: polygons.get(0).getNodes()) {
-                            if (node == id) {
-                                if(!foundElement) {
-                                    foundElement = true;
-                                    double lat = Double.parseDouble(element.getString("lat"));
-                                    double lon = Double.parseDouble(element.getString("lon"));
-                                    findingPoints.put(polygons.get(0).getId(), new Point(lat, lon));
-                                }
-                                i++;
-                                if ( i < elements.length()) {
-                                    element = elements.getJSONObject(i);
-                                    id = Long.parseLong(element.getString("id"));
-                                }
-                            }
+                    boolean foundElement = false;
+                    for (int j = 0; j < polygons.size() && !foundElement; j++) {
+                        Polygon polygon = polygons.get(j);
+                        if (polygon.isFirstNode() && polygon.getFirstNode() == id) {
+                            log.info("Polygon with id = {} filling with Point parameter", polygons.get(j).getId());
+                            foundElement = true;
+                            double lat = Double.parseDouble(element.getString("lat"));
+                            double lon = Double.parseDouble(element.getString("lon"));
+                            findingPoints.put(polygons.get(j).getId(), new Point(lat, lon));
+                            polygons.remove(j);
                         }
-                        polygons.remove(0);
-                    } else {
-                        log.warn("It is some problem in getObjectPointsMapWithObjectId in iteration = {}", i);
                     }
                 } else if (isSinglePoint(element, type)) {
                     log.info("json array of single points");
@@ -149,9 +137,12 @@ public class OverpassApi {
                 } else {
                     log.info("json array of polygon objects");
                     ArrayList<Long> nodes = jsonStringToArray(element.getJSONArray("nodes"));
-                    Collections.sort(nodes);
                     polygons.add(new Polygon(id, nodes));
                 }
+            }
+
+            if (!polygons.isEmpty()) {
+                log.error("It is problem in getObjectPointsMapWithObjectId. Polygons list is not empty and polygons = {}", polygons);
             }
         }catch(JSONException e) {
             log.error("JSONException = {}", e.getMessage());
