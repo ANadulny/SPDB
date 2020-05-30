@@ -49,13 +49,13 @@ public class OverpassApi {
         //Tutaj jest zwracana odpowiedz po usunięciu obiektów nie spełniających warunki użytkownika
         List<Long> searchingObjectsIdNumbers = new ArrayList<>(searchingObjectsMap.keySet());
         log.info("searchingObjectsIdNumbers = {}", searchingObjectsIdNumbers);
+//        Collections.sort(searchingObjectsIdNumbers);
         jsonObject = removeInvalidObjects(jsonObject, searchingObjectsIdNumbers);
         log.info("jsonObject = {}", jsonObject);
 
         return jsonObject.toString();
     }
 
-    // TODO
     private JSONObject removeInvalidObjects(JSONObject jsonObject, List<Long> searchingObjectsIdList) {
         log.info("removeInvalidObjects method");
         try {
@@ -67,15 +67,22 @@ public class OverpassApi {
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
 
-                if (isNodeType(type)) {
+                if (isNodeTypeWithoutTag(type, element)) {
                     newElementsJSONObject.put(element);
-                } else if (!searchingObjectsIdList.isEmpty() && searchingObjectsIdList.get(0) == id) {
-                    log.info("is correct object found with id {}", id);
-                    newElementsJSONObject.put(element);
-                    searchingObjectsIdList.remove(0);
+                } else if (!searchingObjectsIdList.isEmpty()) {
+                    for (int j = 0; j < searchingObjectsIdList.size(); j++) {
+                        if (searchingObjectsIdList.get(j) == id) {
+                            log.info("is correct object found with id {}", id);
+                            newElementsJSONObject.put(element);
+                            searchingObjectsIdList.remove(j);
+                        }
+                    }
                 }
             }
 
+            if (!searchingObjectsIdList.isEmpty()) {
+                log.error("searchingObjectsIdList is not empty and = {}", searchingObjectsIdList);
+            }
             jsonObject.put("elements", newElementsJSONObject);
         }catch(JSONException e) {
             log.error("JSONException = {}. It was error in removeInvalidObjects method!", e.getMessage());
@@ -89,6 +96,14 @@ public class OverpassApi {
         VehicleType vehicleType = wrapper.getVehicleType();
         List<SearchedObject> searchedObjects = wrapper.getSearchedObjects();
         boolean isAnd = wrapper.isAnd();
+        log.info("searchedObjects = {}", searchedObjects);
+        if (isAnd) {
+            log.info("situation with and");
+
+        } else {
+            log.info("situation with alternative");
+
+        }
 
         return searchingObjectsMap;
     }
@@ -114,8 +129,8 @@ public class OverpassApi {
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
 
-                if (isNodeType(type)) {
-                    log.info("is node type");
+                if (isNodeTypeWithoutTag(type, element)) {
+                    log.info("is node type without tag in iteration = {}", i);
 
                     boolean foundElement = false;
                     for (int j = 0; j < polygons.size() && !foundElement; j++) {
@@ -129,13 +144,13 @@ public class OverpassApi {
                             polygons.remove(j);
                         }
                     }
-                } else if (isSinglePoint(element, type)) {
-                    log.info("json array of single points");
+                } else if (isSinglePoint(element)) {
+                    log.info("json array of single points in iteration = {}", i);
                     double lat = Double.parseDouble(element.getString("lat"));
                     double lon = Double.parseDouble(element.getString("lon"));
                     findingPoints.put(id, new Point(lat, lon));
                 } else {
-                    log.info("json array of polygon objects");
+                    log.info("json array of polygon objects in iteration = {}", i);
                     ArrayList<Long> nodes = jsonStringToArray(element.getJSONArray("nodes"));
                     polygons.add(new Polygon(id, nodes));
                 }
@@ -152,8 +167,8 @@ public class OverpassApi {
         return findingPoints;
     }
 
-    private boolean isNodeType(String type) {
-        return Objects.equals(type, "node");
+    private boolean isNodeTypeWithoutTag(String type, JSONObject jsonObject) {
+        return Objects.equals(type, "node") && jsonObject.isNull("tags");
     }
 
     ArrayList<Long> jsonStringToArray(JSONArray jsonArray) throws JSONException {
@@ -164,8 +179,8 @@ public class OverpassApi {
         return longArray;
     }
 
-    private boolean isSinglePoint(JSONObject jsonObject, String objectType) {
-        return jsonObject.isNull("nodes") && !isNodeType((objectType));
+    private boolean isSinglePoint(JSONObject jsonObject) {
+        return jsonObject.isNull("nodes");
     }
 
     private String getResponseFromOverpass(DataWrapper wrapper) throws MalformedURLException {
@@ -181,7 +196,10 @@ public class OverpassApi {
             if (isDistanceEnoughToCheckGraphHooper(wrapper.getPrecision(), wrapper.getStartingPoint(), point, wrapper.getSearchedObject().getDistance())) {
                 String graphHopperResponse = getGraphHopperResponse(wrapper.getStartingPoint(), point, wrapper.getVehicleType());
                 log.info("graphHopperResponse = {}", graphHopperResponse);
-                if (isTimeOk(graphHopperResponse, wrapper.getSearchedObject().getTime())) {
+                if (graphHopperResponse == null) {
+                    log.warn("graphHopperResponse is null for {}. API limit was reached", entry);
+                    filteredPoints.put(id, point);
+                } else if (isTimeOk(graphHopperResponse, wrapper.getSearchedObject().getTime())) {
                     filteredPoints.put(id, point);
                 }
             } else {
