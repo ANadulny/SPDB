@@ -67,6 +67,20 @@ public class OverpassApi {
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
 
+                if (isRelationType(type)) {
+                    log.debug("is relation type in iteration = {}", i);
+//                    try {
+//                        JSONArray members = element.getJSONArray("members");
+//                        if (!members.isNull(0)) {
+//                            for (Polygon polygon: polygons) {
+//                                if (polygon.getId() == members.getJSONObject(0).ge)
+//                            }
+//                        }
+//                    }catch(JSONException e) {
+//                        log.error("JSONException in getObjectPointsMapWithObjectId relation without way = {}", e.getMessage());
+//                    }
+                }
+
                 if (isNodeTypeWithoutTag(type, element) && !nodesWithoutTagsToReturn.isEmpty()) {
                     log.debug("nodesWithoutTagsToReturn = {}", nodesWithoutTagsToReturn);
                     for (int j = 0; j < nodesWithoutTagsToReturn.size(); j++) {
@@ -162,35 +176,6 @@ public class OverpassApi {
                 filteredSearchingObjectMap.put(future.get().getKey(), future.get().getValue());
             }
         }
-
-        /*for(Map.Entry<Long, Point> entry : searchingObjectsMap.entrySet()) {
-            Point point = entry.getValue();
-            boolean foundObjectsIsOk = wrapper.isAnd() ? true : false;
-            for (SearchedObject searchedObject : searchedObjects) {
-                log.debug("searchedObject = {} for point = {}", searchedObject, point);
-                try {
-                    String responseFromOverpass = getResponseFromOverpass(prepareConditionQuery(searchedObject, point));
-                    log.debug("responseFromOverpass = {}", responseFromOverpass);
-                    JSONObject jsonObject = createJsonObject(responseFromOverpass);
-                    log.debug("jsonObject = {}", jsonObject);
-                    if (wrapper.isAnd() && (jsonObject == null || !isFoundSearchingConditionObject(jsonObject))) {
-                        log.debug("is and, foundObjectsIsOk = false");
-                        foundObjectsIsOk = false;
-                        break;
-                    } else if (!wrapper.isAnd() && jsonObject != null && isFoundSearchingConditionObject(jsonObject)) {
-                        log.debug("is alternative, foundObjectsIsOk = true");
-                        foundObjectsIsOk = true;
-                        break;
-                    }
-                } catch (MalformedURLException e) {
-                    log.error("MalformedURLException in filterSearchingObjectsWithUserConditions");
-                }
-            }
-
-            if (foundObjectsIsOk) {
-                filteredSearchingObjectMap.put(entry.getKey(), entry.getValue());
-            }
-        }*/
         pool.shutdown();
         return filteredSearchingObjectMap;
     }
@@ -226,10 +211,10 @@ public class OverpassApi {
                 JSONObject element = elements.getJSONObject(i);
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
-
-                if (isNodeTypeWithoutTag(type, element)) {
+                if (isRelationType(type)) {
+                    log.debug("is relation type in iteration = {}", i);
+                } else if (isNodeTypeWithoutTag(type, element)) {
                     log.debug("is node type without tag in iteration = {}", i);
-
                     boolean foundElement = false;
                     for (int j = 0; j < polygons.size() && !foundElement; j++) {
                         Polygon polygon = polygons.get(j);
@@ -247,15 +232,17 @@ public class OverpassApi {
                     double lat = Double.parseDouble(element.getString("lat"));
                     double lon = Double.parseDouble(element.getString("lon"));
                     findingPoints.put(id, new Point(lat, lon));
-                } else {
+                } else if(!isSinglePoint(element)) {
                     log.debug("json array of polygon objects in iteration = {}", i);
                     ArrayList<Long> nodes = jsonStringToLongArray(element.getJSONArray("nodes"));
                     polygons.add(new Polygon(id, nodes));
+                } else {
+                    log.error("json array of unknown objects in iteration = {}", i);
                 }
             }
 
             if (!polygons.isEmpty()) {
-                log.error("It is problem in getObjectPointsMapWithObjectId. Polygons list is not empty and polygons = {}", polygons);
+                log.warn("It is might be problem in getObjectPointsMapWithObjectId. Polygons list is not empty and polygons = {}. The first polygon node is node with tag.", polygons);
             }
         }catch(JSONException e) {
             log.error("JSONException = {}", e.getMessage());
@@ -263,6 +250,10 @@ public class OverpassApi {
         }
 
         return findingPoints;
+    }
+
+    private boolean isRelationType(String type) {
+        return Objects.equals(type, "relation");
     }
 
     private boolean isNodeTypeWithoutTag(String type, JSONObject jsonObject) {
@@ -278,7 +269,7 @@ public class OverpassApi {
     }
 
     private boolean isSinglePoint(JSONObject jsonObject) {
-        return jsonObject.isNull("nodes");
+        return jsonObject.isNull("nodes") && !jsonObject.isNull("lat") && ! jsonObject.isNull("lon");
     }
 
     private String getResponseFromOverpass(String query) throws MalformedURLException {
