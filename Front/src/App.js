@@ -18,6 +18,7 @@ class App extends React.Component {
       startingPointRadius: new L.circle([0,0],0),
       geoJsonLayer: null,
       querying: false,
+      requirementsMet: false,
       
       length: '',
       routeLength: null,
@@ -39,7 +40,30 @@ class App extends React.Component {
     this.handleDistanceForSearchedFeaturesChange = this.handleDistanceForSearchedFeaturesChange.bind(this);
     this.handleSearchedObjectTagSelect = this.handleSearchedObjectTagSelect.bind(this);
     this.handleChangeIsAnd = this.handleChangeIsAnd.bind(this);
+    this.requirementsAreMet = this.requirementsAreMet.bind(this);
   }
+
+  requirementsAreMet(){
+    var areMet = true;
+    if(Number(this.state.radius) === 0){
+      console.log("Ala");
+      areMet = false;
+    }
+    var nulls = 0;
+    for(var i = 0; i < this.state.searchedObject.elemList.length; i++){
+      if(this.state.searchedObject.elemList[i] === null){
+        nulls++;
+      }
+    }
+    if(nulls > 1){
+      areMet = false;
+    }
+
+    this.setState({
+      requirementsMet: areMet
+    });
+  }
+
 
   onEachFeature(feature, layer) {
     // does this feature have a property named popupContent?
@@ -215,7 +239,7 @@ class App extends React.Component {
     }
     this.setState({
       [name]: value
-    });
+    }, () => this.requirementsAreMet());
   }
 
   handleStartingPointChange(event){
@@ -268,7 +292,7 @@ class App extends React.Component {
       return {
         list,
       };
-    }, () => this.render());
+    }, () => this.requirementsAreMet());
     //alert("you've selected: " + event.target.value);
   }
 
@@ -281,9 +305,8 @@ class App extends React.Component {
     searchedFeatures.splice(Number(value), 1);
     this.setState({
       searchedFeatures: searchedFeatures
-    }, () => this.render());
-    //alert("remove: " + value);
-    //TO DO!
+    }, () => this.requirementsAreMet());
+
   }
 
   addNewRowForSearchedFeature(event){
@@ -384,7 +407,7 @@ class App extends React.Component {
     }
     this.setState({
       searchedObject: searchedObject
-    }, () => this.render());
+    }, () => this.requirementsAreMet());
 
   }
 
@@ -529,7 +552,7 @@ class App extends React.Component {
               </div>
             </div>  
             <br />
-            <Button onClick={this.searchPlace} variant="success" disabled={this.state.querying}>Submit</Button>
+            <Button onClick={this.searchPlace} variant="success" disabled={!(this.state.querying || this.state.requirementsMet)}>Submit</Button>
           </div>
           <br />
         </div>
