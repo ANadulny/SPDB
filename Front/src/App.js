@@ -1,8 +1,8 @@
 import React from "react";
-import L, { marker } from 'leaflet';
+import L from 'leaflet';
 import "./App.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Button, Table } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import Collapsible from 'react-collapsible';
 var osmtogeojson = require('osmtogeojson')
 
@@ -17,16 +17,16 @@ class App extends React.Component {
       startingPointMarker: new L.Marker([0,0]),
       startingPointRadius: new L.circle([0,0],0),
       geoJsonLayer: null,
-      displaySearchPanel: false,
+      querying: false,
+      requirementsMet: false,
       
-      time: '',
       length: '',
       routeLength: null,
       searchedObject: new TagList(),
       searchedFeatures: [new TagList()],
       isAnd: true,
       radius: 0,
-      vehicle: "",
+      vehicle: "Car",
       time: 0,
       precision: 100.0
     };
@@ -39,7 +39,31 @@ class App extends React.Component {
     this.addNewRowForSearchedFeature = this.addNewRowForSearchedFeature.bind(this);
     this.handleDistanceForSearchedFeaturesChange = this.handleDistanceForSearchedFeaturesChange.bind(this);
     this.handleSearchedObjectTagSelect = this.handleSearchedObjectTagSelect.bind(this);
+    this.handleChangeIsAnd = this.handleChangeIsAnd.bind(this);
+    this.requirementsAreMet = this.requirementsAreMet.bind(this);
   }
+
+  requirementsAreMet(){
+    var areMet = true;
+    if(Number(this.state.radius) === 0){
+      console.log("Ala");
+      areMet = false;
+    }
+    var nulls = 0;
+    for(var i = 0; i < this.state.searchedObject.elemList.length; i++){
+      if(this.state.searchedObject.elemList[i] === null){
+        nulls++;
+      }
+    }
+    if(nulls > 1){
+      areMet = false;
+    }
+
+    this.setState({
+      requirementsMet: areMet
+    });
+  }
+
 
   onEachFeature(feature, layer) {
     // does this feature have a property named popupContent?
@@ -51,23 +75,19 @@ class App extends React.Component {
   }
 
   callback(data){
-    if(false){
-      alert("error: ");
-    }
-    else{
-      var options = options || {};
-      var geojson = osmtogeojson(data, {
-        flatProperties: options.flatProperties || false
-      });
+    var options = options || {};
+    var geojson = osmtogeojson(data, {
+      flatProperties: options.flatProperties || false
+    });
 
-      var geoJsonLayer = L.geoJSON(geojson, {onEachFeature: this.onEachFeature});
-      
-      this.state.geoJsonLayer.clearLayers();
-      geoJsonLayer.addTo(this.state.map);
-      this.setState({
-        geoJsonLayer: geoJsonLayer
-      });
-    }
+    var geoJsonLayer = L.geoJSON(geojson, {onEachFeature: this.onEachFeature});
+    
+    this.state.geoJsonLayer.clearLayers();
+    geoJsonLayer.addTo(this.state.map);
+    this.setState({
+      geoJsonLayer: geoJsonLayer,
+      querying: false
+    });
   }
 
   createTagList(elemList){
@@ -87,6 +107,7 @@ class App extends React.Component {
     alert("searching stuff!");
     console.log(this.state.searchedObject.elemList);
     var tagsToSend = this.createTagList(this.state.searchedObject.elemList);
+    console.log(this.state.searchedFeatures)
 
     var searchedFeaturesToSend = [];
     for(var i = 0; i<this.state.searchedFeatures.length; i++){
@@ -121,6 +142,9 @@ class App extends React.Component {
       "Accept": "application/json",
       "Content-Type": "application/json"
     };  
+    this.setState({
+      querying: true
+    });
 
     fetch(url,{
       method: "POST",
@@ -132,7 +156,10 @@ class App extends React.Component {
       console.log(json);
       this.callback(json);
     }).catch(err => {
-      alert("There was some kind of error with response!");
+      alert("There was some kind of error with response! " + err);
+      this.setState({
+        querying: false
+      })
     });
   }
 
@@ -212,7 +239,7 @@ class App extends React.Component {
     }
     this.setState({
       [name]: value
-    });
+    }, () => this.requirementsAreMet());
   }
 
   handleStartingPointChange(event){
@@ -242,16 +269,15 @@ class App extends React.Component {
   handleFeatureTagSelect(event){
     const target = event.target;
     const value = target.value.split(",");
-    const name = target.name;
-    var featuresList = this.state.searchedFeatures[Number(value[0])];
-    
+    let featuresList = this.state.searchedFeatures[Number(value[0])];
+    let i;
     if(value[2] === "ignore"){
-      for(var i = Number(value[1]); i < featuresList.elemList.length; i++){
+      for(i = Number(value[1]); i < featuresList.elemList.length; i++){
         featuresList.elemList[i] = null;
       }
     }else{
       featuresList.elemList[value[1]] = value[2];
-      for(var i = Number(value[1])+1; i<featuresList.elemList.length; i++){
+      for(i = Number(value[1])+1; i<featuresList.elemList.length; i++){
         featuresList.elemList[i] = null;
       }
     }
@@ -266,7 +292,7 @@ class App extends React.Component {
       return {
         list,
       };
-    }, () => this.render());
+    }, () => this.requirementsAreMet());
     //alert("you've selected: " + event.target.value);
   }
 
@@ -279,9 +305,8 @@ class App extends React.Component {
     searchedFeatures.splice(Number(value), 1);
     this.setState({
       searchedFeatures: searchedFeatures
-    }, () => this.render());
-    //alert("remove: " + value);
-    //TO DO!
+    }, () => this.requirementsAreMet());
+
   }
 
   addNewRowForSearchedFeature(event){
@@ -297,13 +322,14 @@ class App extends React.Component {
       return <td></td>;
     var toReturn; 
     var availableFeatures = new AvailableFeatures();
+    var i;
     if(Array.isArray(key)){
-      for(var i = 0; i < key.length; i++){
+      for(i = 0; i < key.length; i++){
         if(key[i] === null)
           return <td></td>;
       }
       var returnNow = true;
-      for(var i = 0; i< availableFeatures.features[key[0]].length; i++){
+      for(i = 0; i< availableFeatures.features[key[0]].length; i++){
         if(availableFeatures.features[key[0]][i][key[1]] !== undefined && typeof(availableFeatures.features[key[0]][i]) !== "string")
           returnNow = false;
       }
@@ -312,7 +338,7 @@ class App extends React.Component {
       toReturn = <td>
         {availableFeatures.features[key[0]] !== undefined &&
           <select onChange = {fun}>
-          <option value={[rowIndex, columnIndex, "ignore"]}>---Please select type---</option>
+          <option value={[rowIndex, columnIndex, "ignore"]} selected>---Please select type---</option>
           {availableFeatures.features[key[0]].map((elem) => {
             if(elem[key[1]] !== undefined && typeof(elem) !== "string"){
               return elem[key[1]].map((elem1) =>{
@@ -325,7 +351,7 @@ class App extends React.Component {
     }else{
       toReturn = <td>
         <select onChange = {fun}>
-          <option value={[rowIndex, columnIndex, "ignore"]}>---Please select type---</option>
+          <option value={[rowIndex, columnIndex, "ignore"]} selected>---Please select type---</option>
           {availableFeatures.features[key].map((elem) => {
             if(typeof(elem) === "string"){
               return <option value={[rowIndex, columnIndex, elem]}>{elem}</option>;
@@ -366,23 +392,38 @@ class App extends React.Component {
   handleSearchedObjectTagSelect(event){
     const target = event.target;
     const value = target.value.split(",");
-    const name = target.name;
 
     var searchedObject = this.state.searchedObject;
-    
+    var i;
     if(value[2] === "ignore"){
-      for(var i = Number(value[1]); i < searchedObject.elemList.length; i++){
+      for(i = Number(value[1]); i < searchedObject.elemList.length; i++){
         searchedObject.elemList[i] = null;
       }
     }else{
       searchedObject.elemList[value[1]] = value[2];
-      for(var i = Number(value[1])+1; i<searchedObject.elemList.length; i++){
+      for(i = Number(value[1])+1; i<searchedObject.elemList.length; i++){
         searchedObject.elemList[i] = null;
       }
     }
     this.setState({
       searchedObject: searchedObject
-    }, () => this.render());
+    }, () => this.requirementsAreMet());
+
+  }
+
+  handleChangeIsAnd(event){
+    const target = event.target;
+    const value = target.value;
+    const name = target.name;
+    if(name === "Con"){
+      this.setState({
+        isAnd: true
+      });
+    }else{
+      this.setState({
+        isAnd: false
+      });
+    }
 
   }
 
@@ -390,14 +431,6 @@ class App extends React.Component {
     var availableFeatures = new AvailableFeatures();
     var rowIndex = -1;
     var searchedFeatures;
-    
-    var isAndBox;
-    if(this.state.isAnd){
-      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange} checked></input>;
-    }
-    else{
-      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange}></input>;
-    }
 
     searchedFeatures = <tbody>
       {this.state.searchedFeatures.map((elem) => {
@@ -407,7 +440,7 @@ class App extends React.Component {
           <th scope="row">{rowIndex+1}</th>
           <td>
             <select onChange = {this.handleFeatureTagSelect}>
-            <option value={[rowIndex, 0, "ignore"]}>---Please select type---</option>
+            <option value={[rowIndex, 0, "ignore"]} selected disabled hidden>---Please select type---</option>
             {Object.entries(availableFeatures.features).map(([key, value]) => {
               return (<option value={[rowIndex, 0, key]} class="boldOption">{key}</option>)
               }
@@ -427,7 +460,7 @@ class App extends React.Component {
         <tr>
           <td>
             <select onChange = {this.handleSearchedObjectTagSelect}>
-            <option value={[rowIndex, 0, "ignore"]}>---Please select type---</option>
+            <option value={[rowIndex, 0, "ignore"]} selected disabled hidden>---Please select type---</option>
             {Object.entries(availableFeatures.features).map(([key, value]) => {
               return (<option value={[0, 0, key]} class="boldOption">{key}</option>)
               }
@@ -446,14 +479,28 @@ class App extends React.Component {
         <div class="content">
           <div class="border p-3">
             <h2>Starting point</h2>
-            <label>latitude: </label>
-            <input type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
-            <label>longitude:</label>
-            <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
-            <label>radius:</label>
-            <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
-            <label>precision:</label>
-            <input name="precision" value={this.state.precision} onChange={this.handleChange}></input>
+            <div class="row">
+              <div class="col-md-2" />
+              <div class="col-md-4 mb-2">
+                <label>latitude: </label>
+                <input class="form-control" type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
+              </div>
+              <div class="col-md-4 mb-2">
+                <label>longitude:</label>
+                <input class="form-control" type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-2" />
+              <div class="col-md-4 mb-2">
+              <label>radius:</label>
+                <input class="form-control" type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
+              </div>
+              <div class="col-md-4 mb-2">
+                <label>precision: {this.state.precision}%</label>
+                <input class="form-control" name="precision" value={this.state.precision} onChange={this.handleChange} type="range" min="0" max="100"></input>
+              </div>
+            </div>
           </div>
           <div class="border p-3">
             <table align="center">
@@ -476,22 +523,36 @@ class App extends React.Component {
             </table>
             <Button onClick = {this.addNewRowForSearchedFeature} variant="primary">Add</Button>
             <br></br>
-            <label>Conjunction?</label>
-            {isAndBox}
-            <small class="form-text text-muted">Do you need all additional features?</small>
+            <div class="row">
+              <div class="col-md-4" />
+              <div class="col-md-2 mb-2">
+                <label>Conjunction</label>
+                <input type="radio" id="other" name="Con" value={true} checked={this.state.isAnd} onClick={this.handleChangeIsAnd}></input>
+              </div>
+              <div class="col-md-2 mb-2">
+                <label>Alternative</label>
+                <input type="radio" id="other" name="Alt" value={false} checked={!this.state.isAnd} onClick={this.handleChangeIsAnd}></input>
+              </div>
+            </div>  
           </div>
           <div class="border p-3">
-            <label>Vehicle: </label>
-            <select name="vehicle" onChange={this.handleChange}>
-              <option value="">-Select Vehicle-</option>
-              <option>Car</option>
-              <option>Bike</option>
-              <option>Foot</option>
-            </select>
-            <label>Time (s)</label>
-            <input onChange={this.handleChange} value={this.state.time} name="time"></input>
-            <br></br>
-            <Button onClick={this.searchPlace} variant="success">Submit</Button>
+            <div class="row">
+              <div class="col-md-4" />
+              <div class="col-md-2 mb-2">
+                <label>Vehicle: </label>
+                <select class="form-control" name="vehicle" onChange={this.handleChange}>
+                  <option selected>Car</option>
+                  <option>Bike</option>
+                  <option>Foot</option>
+                </select>
+              </div>
+              <div class="col-md-2 mb-2">
+                <label>Time (s)</label>
+                <input class="form-control" onChange={this.handleChange} value={this.state.time} name="time"></input>
+              </div>
+            </div>  
+            <br />
+            <Button onClick={this.searchPlace} variant="success" disabled={!(this.state.querying || this.state.requirementsMet)}>Submit</Button>
           </div>
           <br />
         </div>
@@ -506,12 +567,11 @@ class App extends React.Component {
 
 class AvailableFeatures{
   features = {
-    "amenity": ["bicycle_parking", "bicycle_rental", "bus_station", "car_wash", "bar", "restaurant"],
+    "amenity": ["bar", "restaurant", "cafe", "fast_food", "food_court", "pub", "bicycle_rental", "fuel", "parking", "cinema", "theatre"],
     "natural": [{
-      "water": ["lake", "rivier", "pond"],
-      "hill": ["big", "medium", "small"]
+      "water": ["lake", "rivier", "pond"]
     }, "beach", "wood"],
-    "tourism": ["hotel", "guest_house", "camp_site"],
+    "tourism": ["apartment", "attraction", "hotel", "charlet", "museum", "information", "viewpoint"],
     "highway": ["bus_stop"]
   }
 }
