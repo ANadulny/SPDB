@@ -114,7 +114,7 @@ class App extends React.Component {
       vehicleType: this.state.vehicle
     }
     console.log(JSON.stringify(dataToSend));
-    return;
+    
     const url = "/api";
     const jsonString = JSON.stringify(dataToSend);
     var headers = {
