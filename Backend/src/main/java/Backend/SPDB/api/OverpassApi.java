@@ -37,6 +37,11 @@ public class OverpassApi {
             return null;
         }
 
+        // jeśli nie chcemy wyszukiwac po grafie hooppera i brak zalozen dodatkowych od usera
+        if (wrapper.getPrecision() == 100 && wrapper.getSearchedObjects().isEmpty()) {
+            return jsonObject.toString();
+        }
+
         log.info("searchingObjectsMap = {}", searchingObjectsMap.toString());
         searchingObjectsMap = graphHopperFilterTravelTime(searchingObjectsMap, wrapper);
 
