@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.*;
 
 @Slf4j
 @RestController
@@ -20,7 +21,7 @@ public class OverpassApi {
     String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
 
     @PostMapping("/api")
-    String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
+    String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException, ExecutionException, InterruptedException {
         log.info("overpass api");
         log.info("wrapper = {}", wrapper);
         log.info("wrapper prepareQuery = {}", wrapper.prepareQuery());
@@ -119,12 +120,50 @@ public class OverpassApi {
         }
     }
 
-    private HashMap<Long, Point> filterSearchingObjectsWithUserConditions(HashMap<Long, Point> searchingObjectsMap, DataWrapper wrapper) {
+    private HashMap<Long, Point> filterSearchingObjectsWithUserConditions(HashMap<Long, Point> searchingObjectsMap, DataWrapper wrapper) throws ExecutionException, InterruptedException {
         List<SearchedObject> searchedObjects = wrapper.getSearchedObjects();
         HashMap<Long, Point> filteredSearchingObjectMap = new HashMap<>();
         log.info("searchedObjects = {}", searchedObjects);
 
-        for(Map.Entry<Long, Point> entry : searchingObjectsMap.entrySet()) {
+        ExecutorService pool = Executors.newCachedThreadPool();
+        List<Future<FutureObject>> futuresList = new LinkedList<>();
+        for(Map.Entry<Long, Point> entry : searchingObjectsMap.entrySet()){
+            Point point = entry.getValue();
+            futuresList.add(pool.submit(new Callable<FutureObject>() {
+                @Override
+                public FutureObject call() throws Exception {
+                    boolean foundObjectsIsOk = wrapper.isAnd();
+                    for (SearchedObject searchedObject : searchedObjects) {
+                        log.debug("searchedObject = {} for point = {}", searchedObject, point);
+                        try {
+                            String responseFromOverpass = getResponseFromOverpass(prepareConditionQuery(searchedObject, point));
+                            log.debug("responseFromOverpass = {}", responseFromOverpass);
+                            JSONObject jsonObject = createJsonObject(responseFromOverpass);
+                            log.debug("jsonObject = {}", jsonObject);
+                            if (wrapper.isAnd() && (jsonObject == null || !isFoundSearchingConditionObject(jsonObject))) {
+                                log.debug("is and, foundObjectsIsOk = false");
+                                foundObjectsIsOk = false;
+                                break;
+                            } else if (!wrapper.isAnd() && jsonObject != null && isFoundSearchingConditionObject(jsonObject)) {
+                                log.debug("is alternative, foundObjectsIsOk = true");
+                                foundObjectsIsOk = true;
+                                break;
+                            }
+                        } catch (MalformedURLException e) {
+                            log.error("MalformedURLException in filterSearchingObjectsWithUserConditions");
+                        }
+                    }
+                    return new FutureObject(foundObjectsIsOk, entry.getValue(), entry.getKey());
+                }
+            }));
+        }
+        for(Future<FutureObject> future : futuresList){
+            if(future.get().isFoundObjectsIsOk()){
+                filteredSearchingObjectMap.put(future.get().getKey(), future.get().getValue());
+            }
+        }
+
+        /*for(Map.Entry<Long, Point> entry : searchingObjectsMap.entrySet()) {
             Point point = entry.getValue();
             boolean foundObjectsIsOk = wrapper.isAnd() ? true : false;
             for (SearchedObject searchedObject : searchedObjects) {
@@ -151,7 +190,8 @@ public class OverpassApi {
             if (foundObjectsIsOk) {
                 filteredSearchingObjectMap.put(entry.getKey(), entry.getValue());
             }
-        }
+        }*/
+        pool.shutdown();
         return filteredSearchingObjectMap;
     }
 
