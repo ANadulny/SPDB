@@ -261,6 +261,7 @@ class App extends React.Component {
       }, () => {
         if(this.state.startingPointMarker != null){
           this.state.startingPointMarker.setLatLng(this.state.startingPoint);
+          this.state.startingPointRadius.setLatLng(this.state.startingPoint);
       }});
     }
     }
