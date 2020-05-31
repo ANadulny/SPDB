@@ -23,7 +23,7 @@ class App extends React.Component {
       length: '',
       routeLength: null,
       searchedObject: new TagList(),
-      searchedFeatures: [new TagList()],
+      searchedFeatures: [],
       isAnd: true,
       radius: 0,
       vehicle: "Car",
