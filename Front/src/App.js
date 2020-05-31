@@ -338,7 +338,7 @@ class App extends React.Component {
       toReturn = <td>
         {availableFeatures.features[key[0]] !== undefined &&
           <select onChange = {fun}>
-          <option value={[rowIndex, columnIndex, "ignore"]} selected disabled hidden>---Please select type---</option>
+          <option value={[rowIndex, columnIndex, "ignore"]} selected>---Please select type---</option>
           {availableFeatures.features[key[0]].map((elem) => {
             if(elem[key[1]] !== undefined && typeof(elem) !== "string"){
               return elem[key[1]].map((elem1) =>{
@@ -351,7 +351,7 @@ class App extends React.Component {
     }else{
       toReturn = <td>
         <select onChange = {fun}>
-          <option value={[rowIndex, columnIndex, "ignore"]} selected disabled hidden>---Please select type---</option>
+          <option value={[rowIndex, columnIndex, "ignore"]} selected>---Please select type---</option>
           {availableFeatures.features[key].map((elem) => {
             if(typeof(elem) === "string"){
               return <option value={[rowIndex, columnIndex, elem]}>{elem}</option>;
