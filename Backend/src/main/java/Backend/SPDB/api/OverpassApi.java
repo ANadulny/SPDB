@@ -110,7 +110,7 @@ public class OverpassApi {
             JSONArray nodes = element.getJSONArray("nodes");
             log.debug("JSONArray nodes = {}", nodes);
             ArrayList<Long> nodesArrayFromJSON = jsonStringToLongArray(nodes);
-            for (int i = 0; i < nodesArrayFromJSON.size(); i++) {
+            for (int i = 0; i < nodesArrayFromJSON.size() - 1; i++) {
                 resultNodes.add(nodesArrayFromJSON.get(i));
             }
             Collections.sort(resultNodes);
