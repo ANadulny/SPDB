@@ -1,8 +1,8 @@
 import React from "react";
-import L, { marker } from 'leaflet';
+import L from 'leaflet';
 import "./App.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Button, Table } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import Collapsible from 'react-collapsible';
 var osmtogeojson = require('osmtogeojson')
 
@@ -19,7 +19,6 @@ class App extends React.Component {
       geoJsonLayer: null,
       querying: false,
       
-      time: '',
       length: '',
       routeLength: null,
       searchedObject: new TagList(),
@@ -51,24 +50,19 @@ class App extends React.Component {
   }
 
   callback(data){
-    if(false){
-      alert("error: ");
-    }
-    else{
-      var options = options || {};
-      var geojson = osmtogeojson(data, {
-        flatProperties: options.flatProperties || false
-      });
+    var options = options || {};
+    var geojson = osmtogeojson(data, {
+      flatProperties: options.flatProperties || false
+    });
 
-      var geoJsonLayer = L.geoJSON(geojson, {onEachFeature: this.onEachFeature});
-      
-      this.state.geoJsonLayer.clearLayers();
-      geoJsonLayer.addTo(this.state.map);
-      this.setState({
-        geoJsonLayer: geoJsonLayer,
-        querying: false
-      });
-    }
+    var geoJsonLayer = L.geoJSON(geojson, {onEachFeature: this.onEachFeature});
+    
+    this.state.geoJsonLayer.clearLayers();
+    geoJsonLayer.addTo(this.state.map);
+    this.setState({
+      geoJsonLayer: geoJsonLayer,
+      querying: false
+    });
   }
 
   createTagList(elemList){
@@ -250,16 +244,15 @@ class App extends React.Component {
   handleFeatureTagSelect(event){
     const target = event.target;
     const value = target.value.split(",");
-    const name = target.name;
-    var featuresList = this.state.searchedFeatures[Number(value[0])];
-    
+    let featuresList = this.state.searchedFeatures[Number(value[0])];
+    let i;
     if(value[2] === "ignore"){
-      for(var i = Number(value[1]); i < featuresList.elemList.length; i++){
+      for(i = Number(value[1]); i < featuresList.elemList.length; i++){
         featuresList.elemList[i] = null;
       }
     }else{
       featuresList.elemList[value[1]] = value[2];
-      for(var i = Number(value[1])+1; i<featuresList.elemList.length; i++){
+      for(i = Number(value[1])+1; i<featuresList.elemList.length; i++){
         featuresList.elemList[i] = null;
       }
     }
@@ -305,13 +298,14 @@ class App extends React.Component {
       return <td></td>;
     var toReturn; 
     var availableFeatures = new AvailableFeatures();
+    var i;
     if(Array.isArray(key)){
-      for(var i = 0; i < key.length; i++){
+      for(i = 0; i < key.length; i++){
         if(key[i] === null)
           return <td></td>;
       }
       var returnNow = true;
-      for(var i = 0; i< availableFeatures.features[key[0]].length; i++){
+      for(i = 0; i< availableFeatures.features[key[0]].length; i++){
         if(availableFeatures.features[key[0]][i][key[1]] !== undefined && typeof(availableFeatures.features[key[0]][i]) !== "string")
           returnNow = false;
       }
@@ -320,7 +314,7 @@ class App extends React.Component {
       toReturn = <td>
         {availableFeatures.features[key[0]] !== undefined &&
           <select onChange = {fun}>
-          <option value={[rowIndex, columnIndex, "ignore"]}>---Please select type---</option>
+          <option value={[rowIndex, columnIndex, "ignore"]} selected disabled hidden>---Please select type---</option>
           {availableFeatures.features[key[0]].map((elem) => {
             if(elem[key[1]] !== undefined && typeof(elem) !== "string"){
               return elem[key[1]].map((elem1) =>{
@@ -333,7 +327,7 @@ class App extends React.Component {
     }else{
       toReturn = <td>
         <select onChange = {fun}>
-          <option value={[rowIndex, columnIndex, "ignore"]}>---Please select type---</option>
+          <option value={[rowIndex, columnIndex, "ignore"]} selected disabled hidden>---Please select type---</option>
           {availableFeatures.features[key].map((elem) => {
             if(typeof(elem) === "string"){
               return <option value={[rowIndex, columnIndex, elem]}>{elem}</option>;
@@ -374,17 +368,16 @@ class App extends React.Component {
   handleSearchedObjectTagSelect(event){
     const target = event.target;
     const value = target.value.split(",");
-    const name = target.name;
 
     var searchedObject = this.state.searchedObject;
-    
+    var i;
     if(value[2] === "ignore"){
-      for(var i = Number(value[1]); i < searchedObject.elemList.length; i++){
+      for(i = Number(value[1]); i < searchedObject.elemList.length; i++){
         searchedObject.elemList[i] = null;
       }
     }else{
       searchedObject.elemList[value[1]] = value[2];
-      for(var i = Number(value[1])+1; i<searchedObject.elemList.length; i++){
+      for(i = Number(value[1])+1; i<searchedObject.elemList.length; i++){
         searchedObject.elemList[i] = null;
       }
     }
@@ -415,7 +408,7 @@ class App extends React.Component {
           <th scope="row">{rowIndex+1}</th>
           <td>
             <select onChange = {this.handleFeatureTagSelect}>
-            <option value={[rowIndex, 0, "ignore"]}>---Please select type---</option>
+            <option value={[rowIndex, 0, "ignore"]} selected disabled hidden>---Please select type---</option>
             {Object.entries(availableFeatures.features).map(([key, value]) => {
               return (<option value={[rowIndex, 0, key]} class="boldOption">{key}</option>)
               }
@@ -435,7 +428,7 @@ class App extends React.Component {
         <tr>
           <td>
             <select onChange = {this.handleSearchedObjectTagSelect}>
-            <option value={[rowIndex, 0, "ignore"]}>---Please select type---</option>
+            <option value={[rowIndex, 0, "ignore"]} selected disabled hidden>---Please select type---</option>
             {Object.entries(availableFeatures.features).map(([key, value]) => {
               return (<option value={[0, 0, key]} class="boldOption">{key}</option>)
               }
@@ -454,14 +447,29 @@ class App extends React.Component {
         <div class="content">
           <div class="border p-3">
             <h2>Starting point</h2>
-            <label>latitude: </label>
-            <input type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
-            <label>longitude:</label>
-            <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
-            <label>radius:</label>
-            <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
-            <label>precision: {this.state.precision}%</label>
-            <input name="precision" value={this.state.precision} onChange={this.handleChange} type="range" min="0" max="100"></input>
+            <div class="row">
+              <div class="col-md-2" />
+              <div class="col-md-4 mb-2">
+                <label>latitude: </label>
+                <input class="form-control" type='textbox' name='lat' value={this.state.startingPoint.lat} onChange={this.handleStartingPointChange}></input>
+              </div>
+              <div class="col-md-4 mb-2">
+                <label>longitude:</label>
+                <input class="form-control" type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-2" />
+              <div class="col-md-4 mb-2">
+              <label>radius:</label>
+                <input class="form-control" type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
+              </div>
+              <div class="col-md-4 mb-2">
+                <label>precision: {this.state.precision}%</label>
+                <input class="form-control" name="precision" value={this.state.precision} onChange={this.handleChange} type="range" min="0" max="100"></input>
+              </div>
+            </div>
           </div>
           <div class="border p-3">
             <table align="center">
@@ -484,21 +492,35 @@ class App extends React.Component {
             </table>
             <Button onClick = {this.addNewRowForSearchedFeature} variant="primary">Add</Button>
             <br></br>
-            <label>Conjunction?</label>
-            {isAndBox}
-            <small class="form-text text-muted">Do you need all additional features?</small>
+            <div class="row">
+              <div class="col-md-4" />
+              <div class="col-md-2 mb-2">
+                <label>Conjunction</label>
+                <input type="radio" id="other" name="isAnd" value={true} checked></input>
+              </div>
+              <div class="col-md-2 mb-2">
+                <label>Alternative</label>
+                <input type="radio" id="other" name="isAnd" value={false}></input>
+              </div>
+            </div>  
           </div>
           <div class="border p-3">
-            <label>Vehicle: </label>
-            <select name="vehicle" onChange={this.handleChange}>
-              <option value="">-Select Vehicle-</option>
-              <option>Car</option>
-              <option>Bike</option>
-              <option>Foot</option>
-            </select>
-            <label>Time (s)</label>
-            <input onChange={this.handleChange} value={this.state.time} name="time"></input>
-            <br></br>
+            <div class="row">
+              <div class="col-md-4" />
+              <div class="col-md-2 mb-2">
+                <label>Vehicle: </label>
+                <select class="form-control" name="vehicle" onChange={this.handleChange}>
+                  <option selected>Car</option>
+                  <option>Bike</option>
+                  <option>Foot</option>
+                </select>
+              </div>
+              <div class="col-md-2 mb-2">
+                <label>Time (s)</label>
+                <input class="form-control" onChange={this.handleChange} value={this.state.time} name="time"></input>
+              </div>
+            </div>  
+            <br />
             <Button onClick={this.searchPlace} variant="success" disabled={this.state.querying}>Submit</Button>
           </div>
           <br />
