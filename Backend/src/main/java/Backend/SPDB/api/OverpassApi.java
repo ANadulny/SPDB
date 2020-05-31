@@ -146,7 +146,7 @@ public class OverpassApi {
             futuresList.add(pool.submit(new Callable<FutureObject>() {
                 @Override
                 public FutureObject call() throws Exception {
-                    boolean foundObjectsIsOk = wrapper.isAnd();
+                    boolean foundObjectsIsOk = searchedObjects.isEmpty() ? true : wrapper.isAnd();
                     for (SearchedObject searchedObject : searchedObjects) {
                         log.debug("searchedObject = {} for point = {}", searchedObject, point);
                         try {

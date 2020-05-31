@@ -472,7 +472,6 @@ class App extends React.Component {
         </tr>
       </table>
     </div>
-
     return (
       <div class="border p-3">
         <Collapsible trigger="Search Panel">
@@ -552,7 +551,7 @@ class App extends React.Component {
               </div>
             </div>  
             <br />
-            <Button onClick={this.searchPlace} variant="success" disabled={!(this.state.querying || this.state.requirementsMet)}>Submit</Button>
+            <Button onClick={this.searchPlace} variant="success" disabled={!(!this.state.querying && this.state.requirementsMet)}>Submit</Button>
           </div>
           <br />
         </div>
