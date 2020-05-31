@@ -25,7 +25,7 @@ class App extends React.Component {
       searchedFeatures: [new TagList()],
       isAnd: true,
       radius: 0,
-      vehicle: "",
+      vehicle: "Car",
       time: 0,
       precision: 100.0
     };
@@ -38,6 +38,7 @@ class App extends React.Component {
     this.addNewRowForSearchedFeature = this.addNewRowForSearchedFeature.bind(this);
     this.handleDistanceForSearchedFeaturesChange = this.handleDistanceForSearchedFeaturesChange.bind(this);
     this.handleSearchedObjectTagSelect = this.handleSearchedObjectTagSelect.bind(this);
+    this.handleChangeIsAnd = this.handleChangeIsAnd.bind(this);
   }
 
   onEachFeature(feature, layer) {
@@ -387,18 +388,26 @@ class App extends React.Component {
 
   }
 
+  handleChangeIsAnd(event){
+    const target = event.target;
+    const value = target.value;
+    const name = target.name;
+    if(name === "Con"){
+      this.setState({
+        isAnd: true
+      });
+    }else{
+      this.setState({
+        isAnd: false
+      });
+    }
+
+  }
+
   render(){
     var availableFeatures = new AvailableFeatures();
     var rowIndex = -1;
     var searchedFeatures;
-    
-    var isAndBox;
-    if(this.state.isAnd){
-      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange} checked></input>;
-    }
-    else{
-      isAndBox = <input type="checkbox" name="isAnd" value={this.state.isAnd} onChange={this.handleChange}></input>;
-    }
 
     searchedFeatures = <tbody>
       {this.state.searchedFeatures.map((elem) => {
@@ -496,11 +505,11 @@ class App extends React.Component {
               <div class="col-md-4" />
               <div class="col-md-2 mb-2">
                 <label>Conjunction</label>
-                <input type="radio" id="other" name="isAnd" value={true} checked></input>
+                <input type="radio" id="other" name="Con" value={true} checked={this.state.isAnd} onClick={this.handleChangeIsAnd}></input>
               </div>
               <div class="col-md-2 mb-2">
                 <label>Alternative</label>
-                <input type="radio" id="other" name="isAnd" value={false}></input>
+                <input type="radio" id="other" name="Alt" value={false} checked={!this.state.isAnd} onClick={this.handleChangeIsAnd}></input>
               </div>
             </div>  
           </div>
