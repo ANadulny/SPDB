@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 @Slf4j
 @RestController
 public class OverpassApi {
-    String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
+    String apiUrl = "https://overpass.kumi.systems/api/interpreter?data=";
 
     @PostMapping("/api")
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException, ExecutionException, InterruptedException {
@@ -194,7 +194,7 @@ public class OverpassApi {
                 filteredSearchingObjectMap.put(future.get().getKey(), future.get().getValue());
             }
         }
-        pool.shutdown();
+        pool.shutdownNow();
         return filteredSearchingObjectMap;
     }
 
@@ -305,8 +305,8 @@ public class OverpassApi {
     }
 
     private String getResponseFromOverpass(String query) throws MalformedURLException {
-        String response = this.readDataFromURL(apiUrl + query);
         log.debug("apiUrl + query = {}", apiUrl + query);
+        String response = this.readDataFromURL(apiUrl + query);
         return response == null ? "" : response;
     }
 
@@ -379,8 +379,10 @@ public class OverpassApi {
                 builder.append(str);
             }
         }catch(IOException e){
+            log.error("IOexception: {}", e.getMessage());
             return null;
         }
+        log.debug("response: {}", builder.toString());
         return builder.toString();
     }
 
@@ -390,7 +392,7 @@ public class OverpassApi {
         StringBuilder wayPart = new StringBuilder("way");
         StringBuilder relationPart = new StringBuilder("relation");
 
-        query.append("[out:json][timeout:25];");
+        query.append("[out:json][timeout:120];");
         for(Tag tag : searchedObject.getTags()){
             nodePart.append(tag);
             wayPart.append(tag);
