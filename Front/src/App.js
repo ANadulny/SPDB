@@ -1,14 +1,12 @@
 import React from "react";
 import L, { marker } from 'leaflet';
 import "./App.css";
-import AutosizeInput from 'react-input-autosize';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Button, Table } from 'react-bootstrap';
 import Collapsible from 'react-collapsible';
 var osmtogeojson = require('osmtogeojson')
 
 require('leaflet-routing-machine'); // Adds L.Routing onto L
-require('lrm-graphhopper'); // Adds L.Routing.GraphHopper onto L.Routing
 
 class App extends React.Component {
   constructor(props){

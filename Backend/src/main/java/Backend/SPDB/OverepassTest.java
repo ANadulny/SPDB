@@ -1,4 +1,4 @@
-package com.example.SPDB;
+package Backend.SPDB;
 
 import nice.fontaine.overpass.Overpass;
 import nice.fontaine.overpass.models.query.statements.ComplexQuery;

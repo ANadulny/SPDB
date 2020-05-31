@@ -1,6 +1,6 @@
-package com.example.SPDB.api;
+package Backend.SPDB.api;
 
-import com.example.SPDB.data.*;
+import Backend.SPDB.data.*;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,17 +21,12 @@ public class OverpassApi {
 
     @PostMapping("/api")
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
-        wrapper.getDistance();
-        //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
-        List<Tag> tags = new ArrayList() {{
-            add(new Tag("natural", "water"));
-            add(new Tag("water", "lake"));
-        }};
-        SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
+        log.info("overpass api");
+        log.info("wrapper = {}", wrapper);
+        log.info("wrapper prepareQuery = {}", wrapper.prepareQuery());
 
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
         String responseFromOverpass = getResponseFromOverpass(wrapper.prepareQuery());
-
         JSONObject jsonObject = createJsonObject(responseFromOverpass);
 
         //Przygotowanie obiektów dla grafu hoppera
@@ -53,7 +48,6 @@ public class OverpassApi {
         //Tutaj jest zwracana odpowiedz po usunięciu obiektów nie spełniających warunki użytkownika
         List<Long> searchingObjectsIdNumbers = new ArrayList<>(searchingObjectsMap.keySet());
         log.info("searchingObjectsIdNumbers = {}", searchingObjectsIdNumbers);
-//        Collections.sort(searchingObjectsIdNumbers);
         jsonObject = removeInvalidObjects(jsonObject, searchingObjectsIdNumbers);
         log.info("jsonObject = {}", jsonObject);
 
@@ -76,7 +70,7 @@ public class OverpassApi {
                 } else if (!searchingObjectsIdList.isEmpty()) {
                     for (int j = 0; j < searchingObjectsIdList.size(); j++) {
                         if (searchingObjectsIdList.get(j) == id) {
-                            log.info("is correct object found with id {}", id);
+                            log.debug("is correct object found with id {}", id);
                             newElementsJSONObject.put(element);
                             searchingObjectsIdList.remove(j);
                         }
@@ -104,12 +98,17 @@ public class OverpassApi {
             Point point = entry.getValue();
             boolean foundObjectsIsOk = wrapper.isAnd() ? true : false;
             for (SearchedObject searchedObject : searchedObjects) {
+                log.debug("searchedObject = {} for point = {}", searchedObject, point);
                 try {
                     String responseFromOverpass = getResponseFromOverpass(prepareConditionQuery(searchedObject, point));
+                    log.debug("responseFromOverpass = {}", responseFromOverpass);
                     JSONObject jsonObject = createJsonObject(responseFromOverpass);
+                    log.debug("jsonObject = {}", jsonObject);
                     if (wrapper.isAnd() && !isFoundSearchingConditionObject(jsonObject)) {
+                        log.debug("is and, foundObjectsIsOk = false");
                         foundObjectsIsOk = false;
                     } else if (!wrapper.isAnd() && isFoundSearchingConditionObject(jsonObject)) {
+                        log.debug("is alternative, foundObjectsIsOk = true");
                         foundObjectsIsOk = true;
                         continue;
                     }
@@ -128,6 +127,7 @@ public class OverpassApi {
     private boolean isFoundSearchingConditionObject(JSONObject jsonObject) {
         try {
             JSONArray elements = jsonObject.getJSONArray("elements");
+            log.debug("isFoundSearchingConditionObject JSONArray elements = {}", elements);
             return elements == null ? false : true;
         }catch(JSONException e) {
             log.error("JSONException in isFoundSearchingConditionObject = {}", e.getMessage());
@@ -157,13 +157,13 @@ public class OverpassApi {
                 String type = element.getString("type");
 
                 if (isNodeTypeWithoutTag(type, element)) {
-                    log.info("is node type without tag in iteration = {}", i);
+                    log.debug("is node type without tag in iteration = {}", i);
 
                     boolean foundElement = false;
                     for (int j = 0; j < polygons.size() && !foundElement; j++) {
                         Polygon polygon = polygons.get(j);
                         if (polygon.isFirstNode() && polygon.getFirstNode() == id) {
-                            log.info("Polygon with id = {} filling with Point parameter", polygons.get(j).getId());
+                            log.debug("Polygon with id = {} filling with Point parameter", polygons.get(j).getId());
                             foundElement = true;
                             double lat = Double.parseDouble(element.getString("lat"));
                             double lon = Double.parseDouble(element.getString("lon"));
@@ -172,12 +172,12 @@ public class OverpassApi {
                         }
                     }
                 } else if (isSinglePoint(element)) {
-                    log.info("json array of single points in iteration = {}", i);
+                    log.debug("json array of single points in iteration = {}", i);
                     double lat = Double.parseDouble(element.getString("lat"));
                     double lon = Double.parseDouble(element.getString("lon"));
                     findingPoints.put(id, new Point(lat, lon));
                 } else {
-                    log.info("json array of polygon objects in iteration = {}", i);
+                    log.debug("json array of polygon objects in iteration = {}", i);
                     ArrayList<Long> nodes = jsonStringToArray(element.getJSONArray("nodes"));
                     polygons.add(new Polygon(id, nodes));
                 }
@@ -212,17 +212,18 @@ public class OverpassApi {
 
     private String getResponseFromOverpass(String query) throws MalformedURLException {
         String response = this.readDataFromURL(apiUrl + query);
+        log.debug("apiUrl + query = {}", apiUrl + query);
         return response == null ? "" : response;
     }
 
     private HashMap<Long, Point> graphHopperFilterTravelTime(HashMap<Long, Point> searchingObjects, DataWrapper wrapper) throws MalformedURLException {
-        HashMap<Long, Point> filteredPoints = new HashMap<Long, Point>();
+        HashMap<Long, Point> filteredPoints = new HashMap<>();
         for(Map.Entry<Long, Point> entry : searchingObjects.entrySet()) {
             Point point = entry.getValue();
             long id = entry.getKey();
             if (isDistanceEnoughToCheckGraphHooper(wrapper.getPrecision(), wrapper.getStartingPoint(), point, wrapper.getSearchedObject().getDistance())) {
                 String graphHopperResponse = getGraphHopperResponse(wrapper.getStartingPoint(), point, wrapper.getVehicleType());
-                log.info("graphHopperResponse = {}", graphHopperResponse);
+                log.debug("graphHopperResponse = {}", graphHopperResponse);
                 if (graphHopperResponse == null) {
                     log.warn("graphHopperResponse is null for {}. API limit was reached", entry);
                     filteredPoints.put(id, point);
@@ -236,25 +237,31 @@ public class OverpassApi {
         return filteredPoints;
     }
 
-    // TODO check if precision work correctly - (precision / 100)???
     private boolean isDistanceEnoughToCheckGraphHooper(double precision, Point startingPoint, Point endingPoint, double distance) {
         return calculateDistanceBetweenPoints(startingPoint, endingPoint) > (precision / 100) * distance ? true : false;
     }
 
     private double calculateDistanceBetweenPoints(Point startingPoint, Point endingPoint) {
+        double R = 6371e3; // metres
         double x1, x2, y1, y2;
-        x1=startingPoint.getLat();
-        y1=startingPoint.getLng();
-        x2=endingPoint.getLat();
+        x1=startingPoint.getLat() * Math.PI/180;
+        y1=startingPoint.getLng() ;
+        x2=endingPoint.getLat() * Math.PI/180;
         y2=endingPoint.getLng();
-        return Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+        double latDelta = (x1 - x2) * Math.PI/180;
+        double lngDelta = (y1 - y2) * Math.PI/180;
+        double a = Math.sin(latDelta/2) * Math.sin(latDelta/2) +
+                Math.cos(x1) * Math.cos(x2) *
+                        Math.sin(lngDelta/2) * Math.sin(lngDelta/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c; // in metres
     }
 
     private boolean isTimeOk(String graphHopperResponse, long time) {
         try {
             long travelingTime = createJsonObject(graphHopperResponse).getJSONArray("paths").getJSONObject(0).getLong("time");
             travelingTime /= 1000; // converting from ms to s
-            log.info("travelingTime = {}", travelingTime);
+            log.debug("travelingTime = {}", travelingTime);
             return travelingTime < time ? true : false;
         }catch(JSONException e) {
             log.error("JSONException in isTimeOk method = {}", e.getMessage());
@@ -302,6 +309,7 @@ public class OverpassApi {
         relationPart.append(around);
         query.append("(").append(nodePart).append(wayPart).append(relationPart).append(");");
         query.append(">;out;");
+        log.debug("condition query = {}", query.toString());
         return query.toString();
     }
 }
