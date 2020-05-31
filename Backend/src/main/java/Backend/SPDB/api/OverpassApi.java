@@ -104,10 +104,10 @@ public class OverpassApi {
                     log.debug("responseFromOverpass = {}", responseFromOverpass);
                     JSONObject jsonObject = createJsonObject(responseFromOverpass);
                     log.debug("jsonObject = {}", jsonObject);
-                    if (wrapper.isAnd() && !isFoundSearchingConditionObject(jsonObject)) {
+                    if (wrapper.isAnd() && (jsonObject == null || !isFoundSearchingConditionObject(jsonObject))) {
                         log.debug("is and, foundObjectsIsOk = false");
                         foundObjectsIsOk = false;
-                    } else if (!wrapper.isAnd() && isFoundSearchingConditionObject(jsonObject)) {
+                    } else if (!wrapper.isAnd() && jsonObject != null && isFoundSearchingConditionObject(jsonObject)) {
                         log.debug("is alternative, foundObjectsIsOk = true");
                         foundObjectsIsOk = true;
                         continue;
@@ -128,7 +128,7 @@ public class OverpassApi {
         try {
             JSONArray elements = jsonObject.getJSONArray("elements");
             log.debug("isFoundSearchingConditionObject JSONArray elements = {}", elements);
-            return elements == null ? false : true;
+            return elements.isNull(0) ? false : true;
         }catch(JSONException e) {
             log.error("JSONException in isFoundSearchingConditionObject = {}", e.getMessage());
             return false;
