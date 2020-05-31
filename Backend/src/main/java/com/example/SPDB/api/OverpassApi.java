@@ -21,9 +21,13 @@ public class OverpassApi {
 
     @PostMapping("/api")
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException {
-        log.info("Overpass api");
-        log.info("wrapper = {}", wrapper);
-        log.info("wrapper query = {}", wrapper.prepareQuery());
+        wrapper.getDistance();
+        //Przykładowy obiekt do testów - jeziora 15km wokół Płocka
+        List<Tag> tags = new ArrayList() {{
+            add(new Tag("natural", "water"));
+            add(new Tag("water", "lake"));
+        }};
+        SearchedObject searchedObject = new SearchedObject(tags, 150000.0f, 10);
 
         //W tym miejscu dostajemy listę wszystkich punktów, które są szukane przez użytkownika
         String responseFromOverpass = getResponseFromOverpass(wrapper.prepareQuery());
