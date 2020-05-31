@@ -85,6 +85,7 @@ class App extends React.Component {
   searchPlace(event){
     //Do stuff
     alert("searching stuff!");
+    console.log(this.state.searchedObject.elemList);
     var tagsToSend = this.createTagList(this.state.searchedObject.elemList);
 
     var searchedFeaturesToSend = [];
@@ -113,6 +114,7 @@ class App extends React.Component {
       vehicleType: this.state.vehicle
     }
     console.log(JSON.stringify(dataToSend));
+    return;
     const url = "/api";
     const jsonString = JSON.stringify(dataToSend);
     var headers = {
@@ -504,12 +506,13 @@ class App extends React.Component {
 
 class AvailableFeatures{
   features = {
-    "amenity": ["bicycle_parking", "bicycle_rental", "bus_station", "car_wash"],
+    "amenity": ["bicycle_parking", "bicycle_rental", "bus_station", "car_wash", "bar", "restaurant"],
     "natural": [{
       "water": ["lake", "rivier", "pond"],
       "hill": ["big", "medium", "small"]
     }, "beach", "wood"],
-    "tourism": ["hotel", "guest_house", "camp_site"]
+    "tourism": ["hotel", "guest_house", "camp_site"],
+    "highway": ["bus_stop"]
   }
 }
 class TagList{
