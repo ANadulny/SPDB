@@ -17,7 +17,7 @@ class App extends React.Component {
       startingPointMarker: new L.Marker([0,0]),
       startingPointRadius: new L.circle([0,0],0),
       geoJsonLayer: null,
-      displaySearchPanel: false,
+      querying: false,
       
       time: '',
       length: '',
@@ -65,7 +65,8 @@ class App extends React.Component {
       this.state.geoJsonLayer.clearLayers();
       geoJsonLayer.addTo(this.state.map);
       this.setState({
-        geoJsonLayer: geoJsonLayer
+        geoJsonLayer: geoJsonLayer,
+        querying: false
       });
     }
   }
@@ -87,6 +88,7 @@ class App extends React.Component {
     alert("searching stuff!");
     console.log(this.state.searchedObject.elemList);
     var tagsToSend = this.createTagList(this.state.searchedObject.elemList);
+    console.log(this.state.searchedFeatures)
 
     var searchedFeaturesToSend = [];
     for(var i = 0; i<this.state.searchedFeatures.length; i++){
@@ -121,6 +123,9 @@ class App extends React.Component {
       "Accept": "application/json",
       "Content-Type": "application/json"
     };  
+    this.setState({
+      querying: true
+    });
 
     fetch(url,{
       method: "POST",
@@ -132,7 +137,10 @@ class App extends React.Component {
       console.log(json);
       this.callback(json);
     }).catch(err => {
-      alert("There was some kind of error with response!");
+      alert("There was some kind of error with response! " + err);
+      this.setState({
+        querying: false
+      })
     });
   }
 
@@ -452,8 +460,8 @@ class App extends React.Component {
             <input type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
             <label>radius:</label>
             <input type='textbox' name='radius' value={this.state.radius} onChange={this.handleChange}></input>
-            <label>precision:</label>
-            <input name="precision" value={this.state.precision} onChange={this.handleChange}></input>
+            <label>precision: {this.state.precision}%</label>
+            <input name="precision" value={this.state.precision} onChange={this.handleChange} type="range" min="0" max="100"></input>
           </div>
           <div class="border p-3">
             <table align="center">
@@ -491,7 +499,7 @@ class App extends React.Component {
             <label>Time (s)</label>
             <input onChange={this.handleChange} value={this.state.time} name="time"></input>
             <br></br>
-            <Button onClick={this.searchPlace} variant="success">Submit</Button>
+            <Button onClick={this.searchPlace} variant="success" disabled={this.state.querying}>Submit</Button>
           </div>
           <br />
         </div>

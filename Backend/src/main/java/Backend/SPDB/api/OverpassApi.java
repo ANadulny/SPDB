@@ -339,7 +339,7 @@ public class OverpassApi {
         wayPart.append(around);
         relationPart.append(around);
         query.append("(").append(nodePart).append(wayPart).append(relationPart).append(");");
-        query.append(">;out;");
+        query.append("out;");
         log.debug("condition query = {}", query.toString());
         return query.toString();
     }
