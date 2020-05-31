@@ -467,7 +467,6 @@ class App extends React.Component {
                 <input class="form-control" type='textbox' name='lng' value={this.state.startingPoint.lng} onChange={this.handleStartingPointChange}></input>
               </div>
             </div>
-
             <div class="row">
               <div class="col-md-2" />
               <div class="col-md-4 mb-2">
@@ -545,12 +544,11 @@ class App extends React.Component {
 
 class AvailableFeatures{
   features = {
-    "amenity": ["bicycle_parking", "bicycle_rental", "bus_station", "car_wash", "bar", "restaurant"],
+    "amenity": ["bar", "restaurant", "cafe", "fast_food", "food_court", "pub", "bicycle_rental", "fuel", "parking", "cinema", "theatre"],
     "natural": [{
-      "water": ["lake", "rivier", "pond"],
-      "hill": ["big", "medium", "small"]
+      "water": ["lake", "rivier", "pond"]
     }, "beach", "wood"],
-    "tourism": ["hotel", "guest_house", "camp_site"],
+    "tourism": ["apartment", "attraction", "hotel", "charlet", "museum", "information", "viewpoint"],
     "highway": ["bus_stop"]
   }
 }
