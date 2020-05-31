@@ -94,7 +94,7 @@ class App extends React.Component {
       var tagsForFeature = this.createTagList(this.state.searchedFeatures[i].elemList);
       searchedFeaturesToSend.push({
         tags: tagsForFeature,
-        distance: this.state.radius,
+        distance: this.state.searchedFeatures[i].distance,
         time: this.state.time
       });
     }
