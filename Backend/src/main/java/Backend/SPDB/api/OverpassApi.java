@@ -59,20 +59,36 @@ public class OverpassApi {
         try {
             JSONArray elements = jsonObject.getJSONArray("elements");
             JSONArray newElementsJSONObject = new JSONArray();
+            ArrayList<Long> nodesWithoutTagsToReturn = new ArrayList<>();
 
             for (int i=0; i < elements.length(); i++) {
                 JSONObject element = elements.getJSONObject(i);
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
 
-                if (isNodeTypeWithoutTag(type, element)) {
-                    newElementsJSONObject.put(element);
+                if (isNodeTypeWithoutTag(type, element) && !nodesWithoutTagsToReturn.isEmpty()) {
+                    log.debug("nodesWithoutTagsToReturn = {}", nodesWithoutTagsToReturn);
+                    for (int j = 0; j < nodesWithoutTagsToReturn.size(); j++) {
+                        if (nodesWithoutTagsToReturn.get(j) == id) {
+                            log.debug("is correct node found with id {}", id);
+                            newElementsJSONObject.put(element);
+                            nodesWithoutTagsToReturn.remove(j);
+                            continue;
+                        }
+                    }
                 } else if (!searchingObjectsIdList.isEmpty()) {
                     for (int j = 0; j < searchingObjectsIdList.size(); j++) {
                         if (searchingObjectsIdList.get(j) == id) {
                             log.debug("is correct object found with id {}", id);
                             newElementsJSONObject.put(element);
+                            if (!isSinglePoint(element)) {
+                                log.debug("updating return nodes list");
+                                updateReturnNodesList(nodesWithoutTagsToReturn, element);
+                                log.debug("nodesWithoutTagsToReturn = {}", nodesWithoutTagsToReturn);
+                            }
+
                             searchingObjectsIdList.remove(j);
+                            continue;
                         }
                     }
                 }
@@ -87,6 +103,20 @@ public class OverpassApi {
             return new JSONObject();
         }
         return jsonObject;
+    }
+
+    private void updateReturnNodesList(ArrayList<Long> resultNodes, JSONObject element) {
+        try {
+            JSONArray nodes = element.getJSONArray("nodes");
+            log.debug("JSONArray nodes = {}", nodes);
+            ArrayList<Long> nodesArrayFromJSON = jsonStringToLongArray(nodes);
+            for (int i = 0; i < nodesArrayFromJSON.size(); i++) {
+                resultNodes.add(nodesArrayFromJSON.get(i));
+            }
+            Collections.sort(resultNodes);
+        }catch(JSONException e) {
+            log.error("JSONException in updateReturnNodesList = {}", e.getMessage());
+        }
     }
 
     private HashMap<Long, Point> filterSearchingObjectsWithUserConditions(HashMap<Long, Point> searchingObjectsMap, DataWrapper wrapper) {
@@ -107,10 +137,11 @@ public class OverpassApi {
                     if (wrapper.isAnd() && (jsonObject == null || !isFoundSearchingConditionObject(jsonObject))) {
                         log.debug("is and, foundObjectsIsOk = false");
                         foundObjectsIsOk = false;
+                        break;
                     } else if (!wrapper.isAnd() && jsonObject != null && isFoundSearchingConditionObject(jsonObject)) {
                         log.debug("is alternative, foundObjectsIsOk = true");
                         foundObjectsIsOk = true;
-                        continue;
+                        break;
                     }
                 } catch (MalformedURLException e) {
                     log.error("MalformedURLException in filterSearchingObjectsWithUserConditions");
@@ -178,7 +209,7 @@ public class OverpassApi {
                     findingPoints.put(id, new Point(lat, lon));
                 } else {
                     log.debug("json array of polygon objects in iteration = {}", i);
-                    ArrayList<Long> nodes = jsonStringToArray(element.getJSONArray("nodes"));
+                    ArrayList<Long> nodes = jsonStringToLongArray(element.getJSONArray("nodes"));
                     polygons.add(new Polygon(id, nodes));
                 }
             }
@@ -198,7 +229,7 @@ public class OverpassApi {
         return Objects.equals(type, "node") && jsonObject.isNull("tags");
     }
 
-    ArrayList<Long> jsonStringToArray(JSONArray jsonArray) throws JSONException {
+    ArrayList<Long> jsonStringToLongArray(JSONArray jsonArray) throws JSONException {
         ArrayList<Long> longArray = new ArrayList<>();
         for (int i = 0; i < jsonArray.length(); i++) {
             longArray.add(Long.parseLong(jsonArray.getString(i)));
