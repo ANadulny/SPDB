@@ -1,4 +1,4 @@
-package com.example.SPDB.data;
+package Backend.SPDB.data;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.AllArgsConstructor;

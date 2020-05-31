@@ -1,4 +1,4 @@
-package com.example.SPDB.data;
+package Backend.SPDB.data;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -16,5 +16,14 @@ public class SearchedObject{
         this.tags = tags;
         this.distance = distance;
         this.time = time;
+    }
+
+    @Override
+    public String toString() {
+        return "SearchedObject{" +
+                "tags=" + tags +
+                ", distance=" + distance +
+                ", time=" + time +
+                '}';
     }
 }

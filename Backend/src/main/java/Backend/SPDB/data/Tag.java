@@ -1,4 +1,4 @@
-package com.example.SPDB.data;
+package Backend.SPDB.data;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -14,4 +14,8 @@ public class Tag{
         this.objectType = objectType;
     }
 
+    @Override
+    public String toString() {
+        return "[\"" + this.category + "\"=\"" + this.objectType + "\"]";
+    }
 }
