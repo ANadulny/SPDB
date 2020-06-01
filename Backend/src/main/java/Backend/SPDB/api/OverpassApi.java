@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 @Slf4j
 @RestController
 public class OverpassApi {
-    String apiUrl = "https://lz4.overpass-api.de/api/interpreter?data=";
+    String apiUrl = "https://overpass.kumi.systems/api/interpreter?data=";
 
     @PostMapping("/api")
     String OverpassApi(@RequestBody DataWrapper wrapper) throws IOException, ExecutionException, InterruptedException {
@@ -35,6 +35,11 @@ public class OverpassApi {
         if (searchingObjectsMap == null){
             log.error("Searching objects map is equal null!");
             return null;
+        }
+
+        // jeśli nie chcemy wyszukiwac po grafie hooppera i brak zalozen dodatkowych od usera
+        if (wrapper.getPrecision() == 100 && wrapper.getSearchedObjects().isEmpty()) {
+            return jsonObject.toString();
         }
 
         log.info("searchingObjectsMap = {}", searchingObjectsMap.toString());
@@ -66,15 +71,20 @@ public class OverpassApi {
                 JSONObject element = elements.getJSONObject(i);
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
-
-                if (isNodeTypeWithoutTag(type, element) && !nodesWithoutTagsToReturn.isEmpty()) {
+                boolean isAdded = false;
+                if (isRelationType(type)) {
+                    log.info("is relation type in iteration = {}", i);
+                    newElementsJSONObject.put(element);
+                    isAdded = true;
+                } else if (isNodeTypeWithoutTag(type, element) && !nodesWithoutTagsToReturn.isEmpty()) {
                     log.debug("nodesWithoutTagsToReturn = {}", nodesWithoutTagsToReturn);
                     for (int j = 0; j < nodesWithoutTagsToReturn.size(); j++) {
                         if (nodesWithoutTagsToReturn.get(j) == id) {
                             log.debug("is correct node found with id {}", id);
                             newElementsJSONObject.put(element);
+                            isAdded = true;
                             nodesWithoutTagsToReturn.remove(j);
-                            continue;
+                            break;
                         }
                     }
                 } else if (!searchingObjectsIdList.isEmpty()) {
@@ -86,17 +96,39 @@ public class OverpassApi {
                                 log.debug("updating return nodes list");
                                 updateReturnNodesList(nodesWithoutTagsToReturn, element);
                                 log.debug("nodesWithoutTagsToReturn = {}", nodesWithoutTagsToReturn);
+                                isAdded = true;
                             }
-
                             searchingObjectsIdList.remove(j);
-                            continue;
+                            break;
                         }
                     }
                 }
+
+                if (!isAdded) {
+                    log.debug("[WARN] nothing was added for element = {}", element);
+                }
             }
 
+            // dodanie nodow ktore wystapily przed pojawieniem sie obiektow zlzonych
             if (!searchingObjectsIdList.isEmpty()) {
-                log.error("searchingObjectsIdList is not empty and = {}", searchingObjectsIdList);
+                log.warn("searchingObjectsIdList is not empty and = {}", searchingObjectsIdList);
+
+                for (int i=0; i < elements.length(); i++) {
+                    JSONObject element = elements.getJSONObject(i);
+                    long id = Long.parseLong(element.getString("id"));
+                    for (int j = 0; j < searchingObjectsIdList.size(); j++) {
+                        if (searchingObjectsIdList.get(j) == id) {
+                            log.debug("correct node was found with id {}", id);
+                            newElementsJSONObject.put(element);
+                            searchingObjectsIdList.remove(j);
+                            break;
+                        }
+                    }
+                }
+
+                if (!searchingObjectsIdList.isEmpty()) {
+                    log.error("searchingObjectsIdList is not empty and = {}", searchingObjectsIdList);
+                }
             }
             jsonObject.put("elements", newElementsJSONObject);
         }catch(JSONException e) {
@@ -132,7 +164,7 @@ public class OverpassApi {
             futuresList.add(pool.submit(new Callable<FutureObject>() {
                 @Override
                 public FutureObject call() throws Exception {
-                    boolean foundObjectsIsOk = wrapper.isAnd();
+                    boolean foundObjectsIsOk = searchedObjects.isEmpty() ? true : wrapper.isAnd();
                     for (SearchedObject searchedObject : searchedObjects) {
                         log.debug("searchedObject = {} for point = {}", searchedObject, point);
                         try {
@@ -162,36 +194,7 @@ public class OverpassApi {
                 filteredSearchingObjectMap.put(future.get().getKey(), future.get().getValue());
             }
         }
-
-        /*for(Map.Entry<Long, Point> entry : searchingObjectsMap.entrySet()) {
-            Point point = entry.getValue();
-            boolean foundObjectsIsOk = wrapper.isAnd() ? true : false;
-            for (SearchedObject searchedObject : searchedObjects) {
-                log.debug("searchedObject = {} for point = {}", searchedObject, point);
-                try {
-                    String responseFromOverpass = getResponseFromOverpass(prepareConditionQuery(searchedObject, point));
-                    log.debug("responseFromOverpass = {}", responseFromOverpass);
-                    JSONObject jsonObject = createJsonObject(responseFromOverpass);
-                    log.debug("jsonObject = {}", jsonObject);
-                    if (wrapper.isAnd() && (jsonObject == null || !isFoundSearchingConditionObject(jsonObject))) {
-                        log.debug("is and, foundObjectsIsOk = false");
-                        foundObjectsIsOk = false;
-                        break;
-                    } else if (!wrapper.isAnd() && jsonObject != null && isFoundSearchingConditionObject(jsonObject)) {
-                        log.debug("is alternative, foundObjectsIsOk = true");
-                        foundObjectsIsOk = true;
-                        break;
-                    }
-                } catch (MalformedURLException e) {
-                    log.error("MalformedURLException in filterSearchingObjectsWithUserConditions");
-                }
-            }
-
-            if (foundObjectsIsOk) {
-                filteredSearchingObjectMap.put(entry.getKey(), entry.getValue());
-            }
-        }*/
-        pool.shutdown();
+        pool.shutdownNow();
         return filteredSearchingObjectMap;
     }
 
@@ -226,10 +229,10 @@ public class OverpassApi {
                 JSONObject element = elements.getJSONObject(i);
                 long id = Long.parseLong(element.getString("id"));
                 String type = element.getString("type");
-
-                if (isNodeTypeWithoutTag(type, element)) {
-                    log.debug("is node type without tag in iteration = {}", i);
-
+                if (isRelationType(type)) {
+                    log.debug("getObjectPointsMapWithObjectId is relation type in iteration = {}", i);
+                } else if (isSinglePoint(element)) {
+                    log.debug("is single object in iteration = {}", i);
                     boolean foundElement = false;
                     for (int j = 0; j < polygons.size() && !foundElement; j++) {
                         Polygon polygon = polygons.get(j);
@@ -242,27 +245,47 @@ public class OverpassApi {
                             polygons.remove(j);
                         }
                     }
-                } else if (isSinglePoint(element)) {
-                    log.debug("json array of single points in iteration = {}", i);
-                    double lat = Double.parseDouble(element.getString("lat"));
-                    double lon = Double.parseDouble(element.getString("lon"));
-                    findingPoints.put(id, new Point(lat, lon));
-                } else {
+
+                    if (!foundElement) {
+                        log.debug("json array of single points in iteration = {}", i);
+                        double lat = Double.parseDouble(element.getString("lat"));
+                        double lon = Double.parseDouble(element.getString("lon"));
+                        findingPoints.put(id, new Point(lat, lon));
+                    }
+                } else if(!isSinglePoint(element)) {
                     log.debug("json array of polygon objects in iteration = {}", i);
                     ArrayList<Long> nodes = jsonStringToLongArray(element.getJSONArray("nodes"));
                     polygons.add(new Polygon(id, nodes));
+                } else {
+                    log.error("json array of unknown objects in iteration = {}", i);
                 }
             }
 
             if (!polygons.isEmpty()) {
-                log.error("It is problem in getObjectPointsMapWithObjectId. Polygons list is not empty and polygons = {}", polygons);
+                log.warn("It is might be problem in getObjectPointsMapWithObjectId. Polygons list is not empty and polygons = {}. The first polygon node is node with tag.", polygons);
+                for (Polygon polygon: polygons) {
+                    for(Map.Entry<Long, Point> point : findingPoints.entrySet()) {
+                        if (polygon.getFirstNode() == point.getKey()) {
+                            findingPoints.put(polygon.getId(), point.getValue());
+                            log.info("Polygon was set with id = {}", polygon.getId());
+                            break;
+                        }
+                    }
+                }
             }
         }catch(JSONException e) {
             log.error("JSONException = {}", e.getMessage());
             return null;
+        }catch(Exception e) {
+            log.error("eeee = {}", e.getMessage());
+            return null;
         }
 
         return findingPoints;
+    }
+
+    private boolean isRelationType(String type) {
+        return Objects.equals(type, "relation");
     }
 
     private boolean isNodeTypeWithoutTag(String type, JSONObject jsonObject) {
@@ -278,12 +301,12 @@ public class OverpassApi {
     }
 
     private boolean isSinglePoint(JSONObject jsonObject) {
-        return jsonObject.isNull("nodes");
+        return jsonObject.isNull("nodes") && !jsonObject.isNull("lat") && ! jsonObject.isNull("lon");
     }
 
     private String getResponseFromOverpass(String query) throws MalformedURLException {
-        String response = this.readDataFromURL(apiUrl + query);
         log.debug("apiUrl + query = {}", apiUrl + query);
+        String response = this.readDataFromURL(apiUrl + query);
         return response == null ? "" : response;
     }
 
@@ -356,8 +379,10 @@ public class OverpassApi {
                 builder.append(str);
             }
         }catch(IOException e){
+            log.error("IOexception: {}", e.getMessage());
             return null;
         }
+        log.debug("response: {}", builder.toString());
         return builder.toString();
     }
 
@@ -367,7 +392,7 @@ public class OverpassApi {
         StringBuilder wayPart = new StringBuilder("way");
         StringBuilder relationPart = new StringBuilder("relation");
 
-        query.append("[out:json][timeout:25];");
+        query.append("[out:json][timeout:120];");
         for(Tag tag : searchedObject.getTags()){
             nodePart.append(tag);
             wayPart.append(tag);
