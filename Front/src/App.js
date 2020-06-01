@@ -41,6 +41,8 @@ class App extends React.Component {
     this.handleSearchedObjectTagSelect = this.handleSearchedObjectTagSelect.bind(this);
     this.handleChangeIsAnd = this.handleChangeIsAnd.bind(this);
     this.requirementsAreMet = this.requirementsAreMet.bind(this);
+    this.objToString = this.objToString.bind(this);
+    this.onEachFeature = this.onEachFeature.bind(this);
   }
 
   requirementsAreMet(){
@@ -64,13 +66,24 @@ class App extends React.Component {
     });
   }
 
+  objToString(obj) {
+    var str = '';
+    for (var p in obj) {
+        if (obj.hasOwnProperty(p)) {
+            str += "<li>"+ p + ': ' + obj[p] +"</li>";
+        }
+    }
+    return str;
+  }
 
   onEachFeature(feature, layer) {
     // does this feature have a property named popupContent?
     if (feature.properties && feature.properties.popupContent) {
-        layer.bindPopup(feature.properties.popupContent);
-    }else if(feature.properties && feature.properties.tags.name){
-      	layer.bindPopup(feature.properties.tags.name);
+      layer.bindPopup(feature.properties.popupContent);
+    }else if(feature.properties && feature.properties.tags){
+      layer.bindPopup(this.objToString(feature.properties.tags));
+    }else {
+      layer.bindPopup("No information");
     }
   }
 
