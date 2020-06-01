@@ -42,7 +42,7 @@ public class DataWrapper {
         StringBuilder wayPart = new StringBuilder("way");
         StringBuilder relationPart = new StringBuilder("relation");
 
-        query.append("[out:json][timeout:25];");
+        query.append("[out:json][timeout:120];");
         for(Tag tag : this.searchedObject.getTags()){
             nodePart.append(tag);
             wayPart.append(tag);

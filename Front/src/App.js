@@ -103,7 +103,6 @@ class App extends React.Component {
   }
 
   searchPlace(event){
-    //Do stuff
     alert("searching stuff!");
     console.log(this.state.searchedObject.elemList);
     var tagsToSend = this.createTagList(this.state.searchedObject.elemList);
@@ -118,7 +117,6 @@ class App extends React.Component {
         time: this.state.time
       });
     }
-    
 
     var dataToSend = {
       startingPoint: this.state.startingPoint,
@@ -209,19 +207,6 @@ class App extends React.Component {
     })
   }
 
-  async validateForm(event) {
-    console.log("validateForm");
-    // var x, text;
-    // x = document.forms["userSearchingInputData"]["lat"].value;
-    // if (isNaN(x) || x < 1 || x > 10) {
-    //   text = "Input not valid";
-    // } else {
-    //   text = "Input OK";
-    // }
-    // document.getElementById("demo").innerHTML = text;
-    // document.getElementById("submit").disabled = false;
-  }
-
   handleChange(event){
     const target = event.target;
     const value = target.value;
@@ -294,7 +279,6 @@ class App extends React.Component {
         list,
       };
     }, () => this.requirementsAreMet());
-    //alert("you've selected: " + event.target.value);
   }
 
   removeSearchedFeature(event){
