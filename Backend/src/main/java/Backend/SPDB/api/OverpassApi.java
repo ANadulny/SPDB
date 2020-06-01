@@ -38,7 +38,7 @@ public class OverpassApi {
         }
 
         // jeśli nie chcemy wyszukiwac po grafie hooppera i brak zalozen dodatkowych od usera
-        if (wrapper.getPrecision() == 100 && wrapper.getSearchedObjects().isEmpty()) {
+        if (wrapper.getPrecision() == 0 && wrapper.getSearchedObjects().isEmpty()) {
             return jsonObject.toString();
         }
 
@@ -332,7 +332,8 @@ public class OverpassApi {
     }
 
     private boolean isDistanceEnoughToCheckGraphHooper(double precision, Point startingPoint, Point endingPoint, double distance) {
-        return calculateDistanceBetweenPoints(startingPoint, endingPoint) > (precision / 100) * distance ? true : false;
+//        precision wplywa na to jakie punkty znajdujace sie w utworzonym wycinku kola, idac od zewnatrz do srodka, zostana sprawdzone przez graf Hopper
+        return calculateDistanceBetweenPoints(startingPoint, endingPoint) > (distance - ((precision / 100) * distance)) ? true : false;
     }
 
     private double calculateDistanceBetweenPoints(Point startingPoint, Point endingPoint) {
