@@ -43,6 +43,6 @@ npm run strat
 
 go to http://localhost:3000
 
-### Rekomendowane środowisko
+### Rekomendowane środowisko do części frontu aplikacji
 
 Visual Studio Code
